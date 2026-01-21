@@ -80,6 +80,16 @@ app.post('/webhook/demo-message', async (req, res) => {
       productsFound: aiResponse.products?.length || 0
     });
 
+    // Log detallado de productos con imágenes
+    if (aiResponse.products && aiResponse.products.length > 0) {
+      console.log('📦 Productos encontrados:');
+      aiResponse.products.forEach(p => {
+        console.log(`  - ${p.name}`);
+        console.log(`    image_urls:`, p.image_urls || 'NO DEFINIDO');
+        console.log(`    Tiene imágenes:`, !!p.image_urls && p.image_urls.length > 0);
+      });
+    }
+
     // Calcular delay natural
     const typingDelay = calculateTypingDelay(aiResponse.text);
 
