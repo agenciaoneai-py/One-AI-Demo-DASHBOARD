@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 // import { io } from 'socket.io-client';
 
 // Socket.IO deshabilitado para deploy simplificado
@@ -15,36 +15,32 @@ function SimulacionPage({ config }) {
 
   const DEMO_USER_ID = 'demo_simulator_001';
 
-  // Polling para obtener nuevos mensajes cada 3 segundos
-  useEffect(() => {
-    const pollMessages = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/demo/conversation/${DEMO_USER_ID}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.messages) {
-            // Convertir timestamps a objetos Date
-            const messagesWithDates = data.messages.map(msg => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            }));
-            setMessages(messagesWithDates);
-            setIsTyping(data.isTyping || false);
-          }
-        }
-      } catch (error) {
-        // Silenciar errores de polling
-      }
-    };
-
-    // Poll inicial
-    pollMessages();
-
-    // Polling cada 3 segundos
-    const interval = setInterval(pollMessages, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // NOTA: Polling deshabilitado porque sobrescribe los mensajes de productos
+  // En una implementación real con Socket.IO, los productos se enviarían via socket
+  // useEffect(() => {
+  //   const pollMessages = async () => {
+  //     try {
+  //       const response = await fetch(`${API_URL}/api/demo/conversation/${DEMO_USER_ID}`);
+  //       if (response.ok) {
+  //         const data = await response.json();
+  //         if (data.success && data.messages) {
+  //           const messagesWithDates = data.messages.map(msg => ({
+  //             ...msg,
+  //             timestamp: new Date(msg.timestamp)
+  //           }));
+  //           setMessages(messagesWithDates);
+  //           setIsTyping(data.isTyping || false);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       // Silenciar errores de polling
+  //     }
+  //   };
+  //
+  //   pollMessages();
+  //   const interval = setInterval(pollMessages, 3000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -75,6 +71,17 @@ function SimulacionPage({ config }) {
       if (response.ok) {
         const data = await response.json();
 
+        console.log('📥 Respuesta del backend:', {
+          hasResponse: !!data.response,
+          hasProducts: !!data.products,
+          productsCount: data.products?.length || 0,
+          productsPreview: data.products?.map(p => ({
+            name: p.name,
+            hasImages: !!p.image_urls && p.image_urls?.length > 0,
+            imageUrls: p.image_urls
+          }))
+        });
+
         // Agregar respuesta del agente
         setMessages(prev => [...prev, {
           type: 'agent',
@@ -84,11 +91,14 @@ function SimulacionPage({ config }) {
 
         // Si hay productos, agregarlos
         if (data.products && data.products.length > 0) {
+          console.log('✅ Agregando productos al chat:', data.products.length);
           setMessages(prev => [...prev, {
             type: 'products',
             products: data.products,
             timestamp: new Date()
           }]);
+        } else {
+          console.log('⚠️ No hay productos para mostrar');
         }
       }
     } catch (error) {
@@ -149,6 +159,20 @@ function SimulacionPage({ config }) {
               <p className="text-sm text-gray-500">Ejemplo: "Hola, busco una pulsera de perla"</p>
             </div>
           )}
+
+          {/* Debug: Log de mensajes */}
+          {console.log('🖼️ Renderizando mensajes:', {
+            total: messages.length,
+            porTipo: {
+              user: messages.filter(m => m.type === 'user').length,
+              agent: messages.filter(m => m.type === 'agent').length,
+              products: messages.filter(m => m.type === 'products').length
+            },
+            productos: messages.filter(m => m.type === 'products').map(m => ({
+              productos: m.products?.length || 0,
+              primerProducto: m.products?.[0]?.name
+            }))
+          })}
 
           {messages.map((msg, idx) => (
             <div key={idx}>
