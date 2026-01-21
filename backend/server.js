@@ -13,6 +13,11 @@ import contactsRoutes from './routes/contacts.js';
 
 dotenv.config();
 
+console.log('🔍 Environment loaded:');
+console.log('  - FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - PORT:', process.env.PORT);
+
 const app = express();
 const server = createServer(app);
 // Socket.IO deshabilitado para deploy simplificado
@@ -22,8 +27,24 @@ const server = createServer(app);
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Health check para Railway
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'ONE AI Demo Backend',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy' });
+});
 
 app.use(express.json());
 app.use('/api/products', productsRoutes);
@@ -191,6 +212,7 @@ app.post('/api/conversations/:convId/toggle-ai', (req, res) => {
 app.use('/api/config', configRoutes);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Demo backend corriendo en puerto ${PORT}`);
+  console.log(`📡 CORS configurado para: ${process.env.FRONTEND_URL || 'localhost'}`);
 });
