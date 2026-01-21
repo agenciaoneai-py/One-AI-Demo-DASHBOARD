@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #f9fafb;
+  color: #111827;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar {
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  width: 280px;
+  height: 100vh;
+  position: fixed;
+}
+
+.main-content {
+  margin-left: 280px;
+  padding: 2rem;
+}
+
+.nav-pill {
+  border-radius: 9999px;
+  padding: 0.5rem 1.5rem;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.nav-pill.active {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+.hero-banner {
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-circle {
+  position: absolute;
+  right: -50px;
+  top: -50px;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border: 40px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-app {
+  background: white;
+  border: 1px solid #f3f4f6;
+  border-radius: 1.5rem;
+  transition: transform 0.2s;
+}
+
+.card-app:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-black {
+  background: #111827;
+  color: white;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1.2rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.conversation-item {
+  transition: all 0.2s ease;
+}
+
+.conversation-item:hover {
+  transform: translateX(4px);
+}

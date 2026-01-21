@@ -1,0 +1,27 @@
+{
+  "name": "one-ai-demo-backend",
+  "version": "1.0.0",
+  "description": "Backend para Demo de Setter IA - ONE AI Agency",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "setter",
+    "trading"
+  ],
+  "author": "ONE AI Agency",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.90.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "openai": "^6.15.0",
+    "socket.io": "^4.8.3"
+  }
+}
