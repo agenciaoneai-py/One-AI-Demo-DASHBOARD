@@ -123,6 +123,18 @@ app.post('/webhook/demo-message', async (req, res) => {
 
     console.log(`✅ Agente respondió: ${aiResponse.text}`);
 
+    // Log de lo que se envía al frontend
+    console.log('📤 Enviando al frontend:', {
+      success: true,
+      responseLength: aiResponse.text.length,
+      productsCount: aiResponse.products?.length || 0,
+      productsPreview: aiResponse.products?.map(p => ({
+        name: p.name,
+        hasImages: !!p.image_urls && p.image_urls.length > 0,
+        imageCount: p.image_urls?.length || 0
+      }))
+    });
+
     res.json({ success: true, response: aiResponse.text, products: aiResponse.products });
     
   } catch (error) {
