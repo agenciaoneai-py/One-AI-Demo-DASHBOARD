@@ -1,5 +1,5 @@
 import express from 'express';
-import { createServer } from 'http';
+// import { createServer } from 'http';
 // import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -19,11 +19,6 @@ console.log('  - NODE_ENV:', process.env.NODE_ENV);
 console.log('  - PORT:', process.env.PORT);
 
 const app = express();
-const server = createServer(app);
-// Socket.IO deshabilitado para deploy simplificado
-// const io = new Server(server, {
-//   cors: { origin: process.env.FRONTEND_URL || 'http://localhost:5173', methods: ['GET', 'POST'] }
-// });
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -32,18 +27,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Health check para Railway
-app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'ONE AI Demo Backend',
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
-  });
+// Health checks - DEBEN estar primero
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
 });
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 app.use(express.json());
@@ -212,7 +202,6 @@ app.post('/api/conversations/:convId/toggle-ai', (req, res) => {
 app.use('/api/config', configRoutes);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Demo backend corriendo en puerto ${PORT}`);
-  console.log(`📡 CORS configurado para: ${process.env.FRONTEND_URL || 'localhost'}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend running on ${PORT}`);
 });
