@@ -141,7 +141,7 @@ app.get('/api/demo/conversation/:convId', (req, res) => {
   const messages = history.map((msg) => ({
     type: msg.role === 'user' ? 'user' : 'agent',
     text: msg.content,
-    timestamp: new Date()
+    timestamp: new Date().toISOString()
   }));
 
   res.json({

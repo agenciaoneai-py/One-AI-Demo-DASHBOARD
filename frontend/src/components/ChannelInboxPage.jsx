@@ -36,7 +36,8 @@ function ChannelInboxPage({ channel }) {
   const fetchConversations = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/conversations/${channel}`);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_URL}/api/conversations/${channel}`);
       const result = await response.json();
 
       if (result.success) {

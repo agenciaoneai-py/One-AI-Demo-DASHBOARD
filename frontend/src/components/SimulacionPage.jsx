@@ -23,8 +23,12 @@ function SimulacionPage({ config }) {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.messages) {
-            // Actualizar mensajes si hay nuevos
-            setMessages(data.messages);
+            // Convertir timestamps a objetos Date
+            const messagesWithDates = data.messages.map(msg => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }));
+            setMessages(messagesWithDates);
             setIsTyping(data.isTyping || false);
           }
         }
