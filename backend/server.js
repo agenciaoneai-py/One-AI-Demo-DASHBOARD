@@ -132,6 +132,25 @@ app.get('/api/demo/conversations', (req, res) => {
   res.json(generateFakeConversations());
 });
 
+// Endpoint: Obtener historial de conversación específica
+app.get('/api/demo/conversation/:convId', (req, res) => {
+  const { convId } = req.params;
+  const history = conversations.get(convId) || [];
+
+  // Convertir historial a formato de mensajes para el frontend
+  const messages = history.map((msg) => ({
+    type: msg.role === 'user' ? 'user' : 'agent',
+    text: msg.content,
+    timestamp: new Date()
+  }));
+
+  res.json({
+    success: true,
+    messages,
+    isTyping: false
+  });
+});
+
 // Endpoint: Leads fake
 app.get('/api/demo/leads', (req, res) => {
   res.json(generateFakeLeads());
