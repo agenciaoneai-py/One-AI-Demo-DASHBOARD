@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 // Función para generar color único por contacto
 function getContactColor(firstName, lastName) {
   const name = `${firstName}${lastName}`;
@@ -23,23 +25,168 @@ function getContactColor(firstName, lastName) {
   return colors[colorIndex];
 }
 
-export function generateFakeStats() {
-  // Métricas que cambian ligeramente cada vez
-  const base = {
-    totalConversations: 1248,
-    leadsCalificados: 342,
-    citasAgendadas: 58,
-    conversionRate: 24.5,
-    activeNow: Math.floor(Math.random() * 15) + 8, // 8-22 usuarios activos
+// ─── Cached dashboard stats (TTL 5 min, invalidated on setup) ───
+
+let statsCache = null;
+let statsCacheAt = 0;
+const STATS_TTL = 5 * 60 * 1000; // 5 minutes
+
+/** Call after POST /api/demo/setup to force regeneration */
+export function invalidateStatsCache() {
+  statsCache = null;
+  statsCacheAt = 0;
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/** Build ascending 7-day trend from a base value */
+function buildDailyTrend(basePerDay) {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    // Ascending trend: older days get lower multiplier
+    const multiplier = 0.6 + (6 - i) * 0.065 + (Math.random() * 0.1);
+    days.push({ date: dateStr, count: Math.round(basePerDay * multiplier) });
+  }
+  return days;
+}
+
+function formatRelativeTime(minutesAgo) {
+  if (minutesAgo < 1) return 'hace un momento';
+  if (minutesAgo < 60) return `hace ${Math.round(minutesAgo)} min`;
+  const hours = Math.floor(minutesAgo / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  return `hace ${Math.floor(hours / 24)}d`;
+}
+
+export async function generateDashboardStats() {
+  if (statsCache && Date.now() - statsCacheAt < STATS_TTL) return statsCache;
+
+  // ── Fetch real counts from Supabase ──
+  const [productsRes, contactsRes, contactDetailsRes] = await Promise.all([
+    supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('contacts').select('*', { count: 'exact', head: true }),
+    supabase.from('contacts').select('name, lead_quality, platform, lifetime_value, last_interaction_at')
+  ]);
+
+  const totalProducts = productsRes.count || 0;
+  const totalContacts = contactsRes.count || 0;
+  const contacts = contactDetailsRes.data || [];
+
+  // ── Derived metrics (stable per cache window) ──
+  const conversationMultiplier = randomInt(8, 15);
+  const totalConversations = totalContacts * conversationMultiplier;
+  const totalLeads = contacts.filter(c => c.lead_quality === 'warm' || c.lead_quality === 'hot').length;
+  const urgentLeads = contacts.filter(c => c.lead_quality === 'hot').length;
+  const conversionRate = randomInt(22, 32);
+
+  // ── Channel distribution from actual contact platforms ──
+  const channelCounts = { instagram: 0, whatsapp: 0, facebook: 0 };
+  contacts.forEach(c => {
+    if (channelCounts[c.platform] !== undefined) channelCounts[c.platform]++;
+  });
+  const totalPlatform = contacts.length || 1;
+  const channelDistribution = {
+    instagram: Math.round((channelCounts.instagram / totalPlatform) * 100),
+    whatsapp: Math.round((channelCounts.whatsapp / totalPlatform) * 100),
+    facebook: Math.round((channelCounts.facebook / totalPlatform) * 100)
+  };
+  // Ensure they sum to 100
+  const diff = 100 - channelDistribution.instagram - channelDistribution.whatsapp - channelDistribution.facebook;
+  channelDistribution.instagram += diff;
+
+  // ── Daily conversations trend (ascending for good demo) ──
+  const avgPerDay = Math.max(Math.round(totalConversations / 30), 5);
+  const dailyConversations = buildDailyTrend(avgPerDay);
+
+  // ── Badges (generate small counts for sidebar) ──
+  const badges = {
+    appointments: randomInt(2, 5),
+    orders: randomInt(3, 6),
+    alerts: randomInt(1, 4)
   };
 
-  // Pequeñas variaciones
+  // ── Recent activity from real contacts ──
+  const activityTypes = [
+    { type: 'new_lead', template: (c) => ({ type: 'new_lead', name: c.name, platform: c.platform }) },
+    { type: 'sale', template: (c) => ({ type: 'sale', name: c.name, amount: `${(c.lifetime_value || randomInt(80, 500) * 1000).toLocaleString('es-PY')} Gs` }) },
+    { type: 'message', template: (c) => ({ type: 'message', name: c.name, platform: c.platform }) },
+    { type: 'qualified', template: (c) => ({ type: 'qualified', name: c.name, platform: c.platform }) },
+    { type: 'appointment', template: (c) => ({ type: 'appointment', name: c.name, platform: c.platform }) },
+  ];
+
+  const recentActivity = [];
+  // Sort contacts by last_interaction to get the most recent ones
+  const sortedContacts = [...contacts]
+    .sort((a, b) => new Date(b.last_interaction_at) - new Date(a.last_interaction_at))
+    .slice(0, 5);
+
+  const timeOffsets = [2, 15, 38, 95, 180]; // minutes ago — spread nicely
+  sortedContacts.forEach((contact, i) => {
+    const at = pick(activityTypes);
+    recentActivity.push({
+      ...at.template(contact),
+      time: formatRelativeTime(timeOffsets[i] || randomInt(5, 300))
+    });
+  });
+
+  statsCache = {
+    // From Supabase
+    totalProducts,
+    totalContacts,
+
+    // Derived
+    totalConversations,
+    totalLeads,
+    urgentLeads,
+    conversionRate,
+
+    // Change indicators (always positive for demo)
+    conversationsChange: '+12%',
+    leadsChange: '+8%',
+    conversionChange: '+3.2%',
+
+    // Charts
+    dailyConversations,
+    channelDistribution,
+
+    // Sidebar badges
+    badges,
+
+    // Activity feed
+    recentActivity
+  };
+
+  statsCacheAt = Date.now();
+  return statsCache;
+}
+
+// Legacy export kept for backward compat — now wraps the async version with fallback
+export function generateFakeStats() {
+  if (statsCache) return statsCache;
+  // Fallback if async hasn't been called yet
   return {
-    totalConversations: base.totalConversations + Math.floor(Math.random() * 5),
-    leadsCalificados: base.leadsCalificados + Math.floor(Math.random() * 3),
-    citasAgendadas: base.citasAgendadas + Math.floor(Math.random() * 2),
-    conversionRate: (base.conversionRate + (Math.random() - 0.5) * 0.5).toFixed(1),
-    activeNow: base.activeNow,
+    totalProducts: 0,
+    totalContacts: 0,
+    totalConversations: 0,
+    totalLeads: 0,
+    urgentLeads: 0,
+    conversionRate: 25,
+    conversationsChange: '+12%',
+    leadsChange: '+8%',
+    conversionChange: '+3.2%',
+    dailyConversations: [],
+    channelDistribution: { instagram: 45, whatsapp: 35, facebook: 20 },
+    badges: { appointments: 3, orders: 4, alerts: 2 },
+    recentActivity: []
   };
 }
 

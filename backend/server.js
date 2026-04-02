@@ -5,11 +5,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { generateAgentResponse } from './agents/demo-agent.js';
 import { calculateTypingDelay, simulateTyping } from './services/humanizer.js';
-import { generateFakeStats, generateFakeConversations, generateFakeLeads, generateFakeChannelConversations } from './services/fake-data.js';
+import { generateFakeStats, generateDashboardStats, generateFakeConversations, generateFakeLeads, generateFakeChannelConversations } from './services/fake-data.js';
 import configRoutes from './routes/config.js';
 import productsRoutes from './routes/products.js';
 import supabase from './config/supabase.js';
 import contactsRoutes from './routes/contacts.js';
+import demoSetupRoutes from './routes/demo-setup.js';
+import demoPageRoutes from './routes/demo-pages.js';
 
 dotenv.config();
 
@@ -63,11 +65,11 @@ app.post('/webhook/demo-message', async (req, res) => {
   // io.emit('setterTyping', { userId, isTyping: true });
   
   try {
-    // Obtener el clientId del primer cliente (Demo Business)
+    // Obtener el clientId del primer cliente disponible
     const { data: client } = await supabase
       .from('clients')
       .select('id')
-      .eq('business_name', 'Demo Business')
+      .limit(1)
       .single();
 
     const clientId = client?.id;
@@ -144,9 +146,15 @@ app.post('/webhook/demo-message', async (req, res) => {
   }
 });
 
-// Endpoint: Stats fake
-app.get('/api/demo/stats', (req, res) => {
-  res.json(generateFakeStats());
+// Endpoint: Dashboard stats (datos reales de Supabase + generados)
+app.get('/api/demo/stats', async (req, res) => {
+  try {
+    const stats = await generateDashboardStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error generando stats:', error);
+    res.json(generateFakeStats());
+  }
 });
 
 // Endpoint: Conversaciones fake
@@ -241,6 +249,8 @@ app.post('/api/conversations/:convId/toggle-ai', (req, res) => {
 
 // Rutas de configuracion
 app.use('/api/config', configRoutes);
+app.use('/api/demo', demoSetupRoutes);
+app.use('/api', demoPageRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
