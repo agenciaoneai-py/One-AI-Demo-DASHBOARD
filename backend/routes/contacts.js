@@ -48,13 +48,29 @@ router.get('/stats', async (req, res) => {
       .from('contacts')
       .select('status, lead_quality, lifetime_value');
 
+    const all = contacts || [];
+    const scores = all.map(c => c.engagement_score || 0).filter(s => s > 0);
+    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
     const stats = {
-      total: contacts?.length || 0,
-      new: contacts?.filter(c => c.status === 'new').length || 0,
-      qualified: contacts?.filter(c => c.status === 'qualified').length || 0,
-      converted: contacts?.filter(c => c.status === 'converted').length || 0,
-      hot_leads: contacts?.filter(c => c.lead_quality === 'hot').length || 0,
-      total_revenue: contacts?.reduce((sum, c) => sum + (parseFloat(c.lifetime_value) || 0), 0) || 0
+      total: all.length,
+      new: all.filter(c => c.status === 'new').length,
+      qualified: all.filter(c => c.status === 'qualified').length,
+      converted: all.filter(c => c.status === 'converted').length,
+      hot_leads: all.filter(c => c.lead_quality === 'hot').length,
+      total_revenue: all.reduce((sum, c) => sum + (parseFloat(c.lifetime_value) || 0), 0),
+      avgScore,
+      byTemperature: {
+        hot: all.filter(c => c.lead_quality === 'hot').length,
+        warm: all.filter(c => c.lead_quality === 'warm').length,
+        cold: all.filter(c => c.lead_quality === 'cold').length,
+        closed: all.filter(c => c.status === 'converted').length,
+      },
+      byPlatform: {
+        instagram: all.filter(c => c.platform === 'instagram').length,
+        whatsapp: all.filter(c => c.platform === 'whatsapp').length,
+        facebook: all.filter(c => c.platform === 'facebook').length,
+      },
     };
 
     res.json({

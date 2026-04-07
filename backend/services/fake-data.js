@@ -138,31 +138,154 @@ export async function generateDashboardStats() {
     });
   });
 
+  // ── Revenue data ──
+  const totalRevenue = contacts.reduce((sum, c) => sum + (parseFloat(c.lifetime_value) || 0), 0);
+  const ordersCount = randomInt(28, 45);
+  const avgOrderValue = ordersCount > 0 ? Math.round(totalRevenue / ordersCount) : 0;
+  const igRevPct = channelDistribution.instagram / 100;
+  const waRevPct = channelDistribution.whatsapp / 100;
+  const fbRevPct = channelDistribution.facebook / 100;
+
+  const revenue = {
+    total_revenue: totalRevenue || randomInt(8, 18) * 1000000,
+    orders_count: ordersCount,
+    avg_order_value: avgOrderValue || randomInt(250, 500) * 1000,
+    revenue_by_platform: {
+      instagram: Math.round((totalRevenue || 12000000) * igRevPct),
+      whatsapp: Math.round((totalRevenue || 12000000) * waRevPct),
+      facebook: Math.round((totalRevenue || 12000000) * fbRevPct),
+    }
+  };
+
+  // ── Budget IA ──
+  const budget = { percent_used: randomInt(18, 35) };
+
+  // ── Platform totals (absolute counts for donut center) ──
+  const platformTotals = { ...channelCounts };
+
+  // ── Lead temperature counts ──
+  const hotLeads = contacts.filter(c => c.lead_quality === 'hot').length;
+  const warmLeads = contacts.filter(c => c.lead_quality === 'warm').length;
+  const coldLeads = contacts.filter(c => c.lead_quality === 'cold').length;
+  const leadTemperature = { hot: hotLeads, warm: warmLeads, cold: coldLeads };
+
+  // ── Messaging totals ──
+  const totalMessages = totalConversations * randomInt(5, 9);
+  const totalUniqueUsers = Math.round(totalContacts * 0.85);
+  const avgDaily = Math.round(totalMessages / 30);
+  const last24h = randomInt(Math.round(avgDaily * 0.5), Math.round(avgDaily * 1.3));
+  const avgScore = randomInt(55, 78);
+
+  // ── Contacts by platform (absolute) ──
+  const contactsByPlatform = { ...channelCounts };
+
+  // ── Enhanced daily conversations with labels ──
+  const dayNames = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const enrichedDaily = dailyConversations.map((d, i) => {
+    const dt = new Date(d.date);
+    return {
+      date: dayNames[dt.getDay()],
+      fullDate: dt.toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }),
+      conversations: d.count,
+      isToday: d.date === todayStr,
+      showLabel: true,
+    };
+  });
+
+  // ── Enhanced recent activity with richer fields ──
+  const statusLabels = ['Calificado', 'Nuevo', 'En seguimiento', 'Convertido', 'Interesado'];
+  const noteTemplates = [
+    'Interesada en pulsera de perlas',
+    'Consultó precios de anillos',
+    'Pidió catálogo completo',
+    'Quiere agendar visita',
+    'Solicitó info de delivery',
+    'Preguntó por alianzas',
+    'Interesado en collar oro rosa',
+    'Volvió a preguntar por stock',
+  ];
+
+  const enrichedActivity = sortedContacts.map((contact, i) => {
+    const names = contact.name.split(' ');
+    const initials = names.map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    return {
+      id: i + 1,
+      name: contact.name,
+      initials,
+      platform: contact.platform,
+      status: pick(statusLabels),
+      timeAgo: formatRelativeTime(timeOffsets[i] || randomInt(5, 300)),
+      note: pick(noteTemplates),
+      temperature: contact.lead_quality || 'warm',
+    };
+  });
+
+  // ── Sparkline data (7 points per stat card) ──
+  const makeSparkline = (base, trend = 'up') => {
+    const pts = [];
+    for (let i = 0; i < 7; i++) {
+      const factor = trend === 'up' ? 0.7 + (i * 0.05) : 1.0 - (i * 0.03);
+      pts.push({ value: Math.round(base * factor * (0.85 + Math.random() * 0.3)) });
+    }
+    return pts;
+  };
+
   statsCache = {
     // From Supabase
     totalProducts,
     totalContacts,
 
-    // Derived
+    // KPIs
     totalConversations,
     totalLeads,
     urgentLeads,
     conversionRate,
+    activeUsers24h: last24h,
 
-    // Change indicators (always positive for demo)
+    // Change indicators
     conversationsChange: '+12%',
     leadsChange: '+8%',
+    activeChange: '+15%',
     conversionChange: '+3.2%',
 
+    // Sparklines
+    sparklines: {
+      conversations: makeSparkline(Math.round(totalConversations / 7)),
+      leads: makeSparkline(Math.round(totalLeads / 7)),
+      active: makeSparkline(Math.round(last24h / 7)),
+      conversion: makeSparkline(conversionRate, 'up'),
+    },
+
+    // Revenue
+    revenue,
+
+    // Budget IA
+    budget,
+
     // Charts
-    dailyConversations,
+    dailyConversations: enrichedDaily,
     channelDistribution,
+    platformTotals,
+
+    // Messages
+    totalMessages,
+    totalUniqueUsers,
+    avgDaily,
+    last24h,
+    avgScore,
+
+    // Contacts by platform
+    contactsByPlatform,
+
+    // Lead temperature
+    leadTemperature,
 
     // Sidebar badges
     badges,
 
-    // Activity feed
-    recentActivity
+    // Activity feed (enriched)
+    recentActivity: enrichedActivity
   };
 
   statsCacheAt = Date.now();

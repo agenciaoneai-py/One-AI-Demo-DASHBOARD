@@ -186,7 +186,7 @@ app.get('/api/demo/leads', (req, res) => {
   res.json(generateFakeLeads());
 });
 
-// Endpoint: Conversaciones por canal
+// Endpoint: Conversaciones por canal (normalizado para frontend)
 app.get('/api/conversations/:channel', (req, res) => {
   const { channel } = req.params;
   const validChannels = ['instagram', 'whatsapp', 'facebook'];
@@ -195,8 +195,41 @@ app.get('/api/conversations/:channel', (req, res) => {
     return res.status(400).json({ success: false, error: 'Canal inválido' });
   }
 
-  const conversations = generateFakeChannelConversations(channel, 15);
-  res.json({ success: true, data: conversations });
+  const raw = generateFakeChannelConversations(channel, 15);
+
+  // Normalize to shape expected by new frontend
+  const conversations = raw.map(c => ({
+    id: c.id,
+    user_id: c.contact.subscriber_id,
+    platform: c.platform,
+    ai_mode: c.aiEnabled ? 'automatic' : 'manual',
+    unread_count: c.unreadCount || 0,
+    status: c.status,
+    assigned_to: c.assignedTo,
+    last_message: c.lastMessage?.text || '',
+    last_message_at: c.lastMessage?.timestamp || c.contact.last_interaction_at,
+    contact: {
+      name: `${c.contact.first_name} ${c.contact.last_name}`,
+      first_name: c.contact.first_name,
+      last_name: c.contact.last_name,
+      username: c.contact.email?.split('@')[0] || null,
+      phone: c.contact.phone || c.contact.whatsapp_phone,
+      email: c.contact.email,
+      lead_temperature: c.contact.temperature,
+      lead_score: c.contact.leadScore,
+      avatar_url: null,
+      subscriber_id: c.contact.subscriber_id,
+      instagram_id: c.contact.instagram_id,
+      whatsapp_phone: c.contact.whatsapp_phone,
+      last_interaction_at: c.contact.last_interaction_at,
+      custom_fields: c.contact.custom_fields,
+      tags: c.contact.tags,
+      color: c.contact.color,
+    },
+    messages: c.messages,
+  }));
+
+  res.json({ success: true, data: conversations, conversations });
 });
 
 // Endpoint: Enviar mensaje (fake)
