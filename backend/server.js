@@ -146,6 +146,42 @@ app.post('/webhook/demo-message', async (req, res) => {
   }
 });
 
+// Endpoint: Obtener prompt del agente
+app.get('/api/demo/prompt', async (req, res) => {
+  try {
+    const { data: client } = await supabase.from('clients').select('id').limit(1).single();
+    const clientId = client?.id;
+    const { data } = await supabase
+      .from('agent_prompts')
+      .select('prompt_text')
+      .eq('client_id', clientId)
+      .eq('is_active', true)
+      .single();
+    res.json({ success: true, prompt: data?.prompt_text || '' });
+  } catch (error) {
+    res.json({ success: true, prompt: '' });
+  }
+});
+
+// Endpoint: Actualizar prompt del agente
+app.put('/api/demo/prompt', async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt?.trim()) return res.status(400).json({ success: false, error: 'Prompt requerido' });
+  try {
+    const { data: client } = await supabase.from('clients').select('id').limit(1).single();
+    const clientId = client?.id;
+    await supabase
+      .from('agent_prompts')
+      .update({ prompt_text: prompt.trim() })
+      .eq('client_id', clientId)
+      .eq('is_active', true);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error actualizando prompt:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Endpoint: Dashboard stats (datos reales de Supabase + generados)
 app.get('/api/demo/stats', async (req, res) => {
   try {

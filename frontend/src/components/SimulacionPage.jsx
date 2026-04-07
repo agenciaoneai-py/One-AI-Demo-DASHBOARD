@@ -1,178 +1,260 @@
-import { useState } from 'react';
-// import { io } from 'socket.io-client';
-
-// Socket.IO deshabilitado para deploy simplificado
-// const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000');
+import { useState, useEffect, useRef } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+const DEMO_USER_ID = 'demo_simulator_001';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getExampleMessage(business = '') {
+  const b = business.toLowerCase();
+  if (b.includes('joyer') || b.includes('silver') || b.includes('perla')) return 'busco una pulsera de perla';
+  if (b.includes('restaurant') || b.includes('parrilla') || b.includes('pizza') || b.includes('comida')) return 'quiero ver el menú del día';
+  if (b.includes('clínic') || b.includes('clinic') || b.includes('médic') || b.includes('salud')) return 'quiero agendar una consulta';
+  if (b.includes('ropa') || b.includes('urban') || b.includes('moda') || b.includes('style')) return '¿tienen remeras nuevas?';
+  if (b.includes('inmobil') || b.includes('propiedad') || b.includes('este')) return 'busco un departamento en Asunción';
+  if (b.includes('farmac') || b.includes('quimic')) return 'necesito información sobre un medicamento';
+  return 'me interesa conocer sus productos';
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function Toast({ message, type = 'success', onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3500);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[60] animate-fade-in-up">
+      <div className={`px-4 py-3 rounded-xl shadow-xl text-sm flex items-center gap-2 ${
+        type === 'success' ? 'bg-gray-900 text-white' : 'bg-red-600 text-white'
+      }`}>
+        <i className={`fas ${type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-exclamation text-red-200'}`} />
+        {message}
+      </div>
+    </div>
+  );
+}
+
+// ─── PromptEditorModal ────────────────────────────────────────────────────────
+
+function PromptEditorModal({ onClose, onSaved }) {
+  const [prompt,       setPrompt]       = useState('');
+  const [loading,      setLoading]      = useState(true);
+  const [saving,       setSaving]       = useState(false);
+  const [fetchError,   setFetchError]   = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/demo/prompt`)
+      .then(r => r.json())
+      .then(d => setPrompt(d.prompt || ''))
+      .catch(() => setFetchError(true))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    if (!prompt.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/api/demo/prompt`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onSaved();
+        onClose();
+      } else {
+        onSaved('error');
+        onClose();
+      }
+    } catch {
+      onSaved('error');
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl bg-white rounded-xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Editar Prompt del Agente</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
+            <i className="fas fa-xmark text-xl" />
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-500 mb-4">
+          Este es el prompt del sistema que define cómo responde tu agente de IA. Los cambios se aplican a partir del próximo mensaje.
+        </p>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : fetchError ? (
+          <div className="py-8 text-center text-sm text-red-500">
+            <i className="fas fa-exclamation-circle mr-2" />
+            No se pudo cargar el prompt. Intentá de nuevo.
+          </div>
+        ) : (
+          <textarea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            rows={16}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+            placeholder="Sos un asistente de ventas para..."
+            autoFocus
+          />
+        )}
+
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-gray-400">{prompt.length} caracteres</p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || loading || !prompt.trim()}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2 transition-colors"
+            >
+              {saving
+                ? <><i className="fas fa-spinner fa-spin" /> Guardando...</>
+                : <><i className="fas fa-save" /> Guardar Prompt</>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── SimulacionPage ───────────────────────────────────────────────────────────
+
 function SimulacionPage({ config }) {
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [showPromptEditor, setShowPromptEditor] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [messages,         setMessages]         = useState([]);
+  const [inputMessage,     setInputMessage]      = useState('');
+  const [isTyping,         setIsTyping]          = useState(false);
+  const [promptEditorOpen, setPromptEditorOpen]  = useState(false);
+  const [lightboxImage,    setLightboxImage]     = useState(null);
+  const [toast,            setToast]             = useState(null);
+  const messagesEndRef = useRef(null);
 
-  const DEMO_USER_ID = 'demo_simulator_001';
+  // Derive display values from config
+  const agentName    = config?.ownerName    || 'Agente IA';
+  const businessName = config?.businessName || 'Tu Negocio';
+  const agentRole    = config?.industryConfig?.agentRole || 'Asistente de ventas';
+  const logoUrl      = config?.logoUrl      || null;
+  const avatarInitial = agentName.charAt(0).toUpperCase();
 
-  // NOTA: Polling deshabilitado porque sobrescribe los mensajes de productos
-  // En una implementación real con Socket.IO, los productos se enviarían via socket
-  // useEffect(() => {
-  //   const pollMessages = async () => {
-  //     try {
-  //       const response = await fetch(`${API_URL}/api/demo/conversation/${DEMO_USER_ID}`);
-  //       if (response.ok) {
-  //         const data = await response.json();
-  //         if (data.success && data.messages) {
-  //           const messagesWithDates = data.messages.map(msg => ({
-  //             ...msg,
-  //             timestamp: new Date(msg.timestamp)
-  //           }));
-  //           setMessages(messagesWithDates);
-  //           setIsTyping(data.isTyping || false);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       // Silenciar errores de polling
-  //     }
-  //   };
-  //
-  //   pollMessages();
-  //   const interval = setInterval(pollMessages, 3000);
-  //   return () => clearInterval(interval);
-  // }, []);
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const messageText = inputMessage;
+    const text = inputMessage;
     setInputMessage('');
-
-    // Agregar mensaje del usuario inmediatamente
-    setMessages(prev => [...prev, {
-      type: 'user',
-      text: messageText,
-      timestamp: new Date()
-    }]);
-
+    setMessages(prev => [...prev, { type: 'user', text, timestamp: new Date() }]);
     setIsTyping(true);
 
     try {
-      const response = await fetch(`${API_URL}/webhook/demo-message`, {
+      const res = await fetch(`${API_URL}/webhook/demo-message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: DEMO_USER_ID,
-          message: messageText,
-          platform: 'demo'
-        })
+        body: JSON.stringify({ userId: DEMO_USER_ID, message: text, platform: 'demo' }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-
-        console.log('📥 Respuesta del backend:', {
-          hasResponse: !!data.response,
-          hasProducts: !!data.products,
-          productsCount: data.products?.length || 0,
-          productsPreview: data.products?.map(p => ({
-            name: p.name,
-            hasImages: !!p.image_urls && p.image_urls?.length > 0,
-            imageUrls: p.image_urls
-          }))
-        });
-
-        // Agregar respuesta del agente
-        setMessages(prev => [...prev, {
-          type: 'agent',
-          text: data.response,
-          timestamp: new Date()
-        }]);
-
-        // Si hay productos, agregarlos
-        if (data.products && data.products.length > 0) {
-          console.log('✅ Agregando productos al chat:', data.products.length);
-          setMessages(prev => [...prev, {
-            type: 'products',
-            products: data.products,
-            timestamp: new Date()
-          }]);
-        } else {
-          console.log('⚠️ No hay productos para mostrar');
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(prev => [...prev, { type: 'agent', text: data.response, timestamp: new Date() }]);
+        if (data.products?.length > 0) {
+          setMessages(prev => [...prev, { type: 'products', products: data.products, timestamp: new Date() }]);
         }
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error('Error:', err);
     } finally {
       setIsTyping(false);
     }
   };
 
+  const handlePromptSaved = (result) => {
+    if (result === 'error') {
+      setToast({ type: 'error', message: 'Error guardando el prompt' });
+    } else {
+      setToast({ type: 'success', message: 'Prompt actualizado. Se aplica desde el próximo mensaje.' });
+    }
+  };
+
   return (
     <div className="flex h-full bg-gray-50">
-      {/* Chat Principal */}
+      {/* Chat */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto bg-white shadow-xl">
-        {/* Header estilo WhatsApp */}
+
+        {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
-              J
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {logoUrl ? (
+                <img src={logoUrl} alt={businessName} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <span className="text-white font-bold text-sm">{avatarInitial}</span>
+              )}
             </div>
             <div>
-              <p className="font-bold text-white">Jessica - Silver Line</p>
-              <p className="text-xs text-green-100">Asesora de ventas • En línea</p>
+              <p className="font-bold text-white">{agentName} – {businessName}</p>
+              <p className="text-xs text-green-100">{agentRole} • En línea</p>
             </div>
           </div>
           <button
-            onClick={() => setShowPromptEditor(true)}
+            onClick={() => setPromptEditorOpen(true)}
             className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-semibold transition flex items-center gap-2"
           >
-            <i className="fas fa-cog"></i>
+            <i className="fas fa-cog" />
             Editar Prompt
           </button>
         </div>
 
-        {/* Explicación del demo */}
+        {/* Info banner */}
         <div className="bg-yellow-50 border-b border-yellow-200 p-4">
           <div className="flex items-start gap-3">
-            <i className="fas fa-info-circle text-yellow-600 mt-1"></i>
+            <i className="fas fa-info-circle text-yellow-600 mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-yellow-900 mb-1">
-                💬 Simulador de Conversación
-              </p>
+              <p className="text-sm font-semibold text-yellow-900 mb-1">💬 Simulador de Conversación</p>
               <p className="text-xs text-yellow-700">
-                Así se verá la IA respondiendo en WhatsApp/Instagram de tu negocio.
+                Así se verá {agentName} respondiendo en WhatsApp/Instagram de {businessName}.
                 Probá consultando por productos, precios o delivery.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Mensajes */}
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#e5ddd5]">
           {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-comments text-green-600 text-3xl"></i>
+                <i className="fas fa-comments text-green-600 text-3xl" />
               </div>
               <p className="text-gray-600 font-semibold mb-2">Iniciá la conversación</p>
-              <p className="text-sm text-gray-500">Ejemplo: "Hola, busco una pulsera de perla"</p>
+              <p className="text-sm text-gray-500">
+                Ejemplo: "{getExampleMessage(businessName)}"
+              </p>
             </div>
           )}
-
-          {/* Debug: Log de mensajes */}
-          {console.log('🖼️ Renderizando mensajes:', {
-            total: messages.length,
-            porTipo: {
-              user: messages.filter(m => m.type === 'user').length,
-              agent: messages.filter(m => m.type === 'agent').length,
-              products: messages.filter(m => m.type === 'products').length
-            },
-            productos: messages.filter(m => m.type === 'products').map(m => ({
-              productos: m.products?.length || 0,
-              primerProducto: m.products?.[0]?.name
-            }))
-          })}
 
           {messages.map((msg, idx) => (
             <div key={idx}>
@@ -193,7 +275,7 @@ function SimulacionPage({ config }) {
                 <div className="flex justify-start">
                   <div className="max-w-md">
                     <div className="bg-white px-4 py-2 rounded-lg shadow">
-                      <p className="text-sm text-gray-900">{msg.text}</p>
+                      <p className="text-sm text-gray-900 whitespace-pre-line">{msg.text}</p>
                       <p className="text-xs text-gray-500 text-right mt-1">
                         {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -202,7 +284,7 @@ function SimulacionPage({ config }) {
                 </div>
               )}
 
-              {msg.type === 'products' && msg.products && (
+              {msg.type === 'products' && msg.products?.length > 0 && (
                 <div className="flex justify-start">
                   <div className="max-w-lg">
                     <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -213,14 +295,14 @@ function SimulacionPage({ config }) {
                               <img
                                 src={product.image_urls[0]}
                                 alt={product.name}
-                                className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 transition"
+                                className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 transition flex-shrink-0"
                                 onClick={() => setLightboxImage(product.image_urls[0])}
                                 title="Click para ver en tamaño completo"
                               />
                             )}
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
-                              <p className="text-xs text-gray-500 mb-1">{product.description}</p>
+                              <p className="text-xs text-gray-500 mb-1 line-clamp-2">{product.description}</p>
                               <p className="text-lg font-bold text-green-600">
                                 {product.price.toLocaleString('es-PY')} {product.currency === 'USD' ? 'USD' : 'Gs'}
                               </p>
@@ -245,53 +327,56 @@ function SimulacionPage({ config }) {
             <div className="flex justify-start">
               <div className="bg-white px-4 py-3 rounded-lg shadow">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input de mensajes */}
+        {/* Input */}
         <div className="bg-gray-100 p-4 border-t border-gray-200">
           <div className="flex gap-3">
             <input
               type="text"
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Escribí tu mensaje..."
+              onChange={e => setInputMessage(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              placeholder={`Escribile a ${agentName}...`}
               className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
               autoFocus
             />
             <button
               onClick={sendMessage}
-              className="px-6 py-3 bg-green-600 text-white rounded-full font-semibold hover:bg-green-700 transition"
+              disabled={!inputMessage.trim() || isTyping}
+              className="px-6 py-3 bg-green-600 text-white rounded-full font-semibold hover:bg-green-700 transition disabled:opacity-50"
             >
-              <i className="fas fa-paper-plane"></i>
+              <i className="fas fa-paper-plane" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Modal de edición de prompt (próximo paso) */}
-      {showPromptEditor && (
+      {/* Prompt editor */}
+      {promptEditorOpen && (
         <PromptEditorModal
-          onClose={() => setShowPromptEditor(false)}
-          config={config}
+          onClose={() => setPromptEditorOpen(false)}
+          onSaved={handlePromptSaved}
         />
       )}
 
-      {/* Lightbox para expandir imágenes */}
+      {/* Image lightbox */}
       {lightboxImage && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setLightboxImage(null)}
         >
           <button
-            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300"
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 leading-none"
             onClick={() => setLightboxImage(null)}
           >
             ×
@@ -300,42 +385,13 @@ function SimulacionPage({ config }) {
             src={lightboxImage}
             alt="Producto expandido"
             className="max-w-full max-h-full object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           />
         </div>
       )}
-    </div>
-  );
-}
 
-// Componente placeholder para el editor de prompt
-function PromptEditorModal({ onClose, config }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Editor de Prompt del Agente</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <i className="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          <p className="text-gray-600 mb-4">Próximamente: Editor completo de prompt en tiempo real</p>
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500">
-              Aquí podrás editar el comportamiento de Jessica, su tono, flujo de conversación y reglas.
-            </p>
-          </div>
-        </div>
-        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
+      {/* Toast */}
+      {toast && <Toast key={toast.message} {...toast} onDone={() => setToast(null)} />}
     </div>
   );
 }
