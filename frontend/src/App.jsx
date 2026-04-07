@@ -1,5 +1,20 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams, useLocation, useNavigate } from 'react-router-dom';
+
+const PAGE_TITLES = {
+  '/':               'Dashboard',
+  '/conversations':  'Conversaciones',
+  '/crm':            'CRM',
+  '/inventario':     'Inventario',
+  '/alertas':        'Alertas',
+  '/citas':          'Citas',
+  '/pedidos':        'Pedidos',
+  '/delivery':       'Delivery',
+  '/notificaciones': 'Notificaciones',
+  '/simulacion':     'Simulación',
+  '/setup':          'Setup Demo',
+  '/configuracion':  'Configuración',
+};
 import InventarioPage    from './components/InventarioPage';
 import SimulacionPage    from './components/SimulacionPage';
 import CRMPage           from './components/CRMPage';
@@ -91,6 +106,15 @@ function App() {
 // ─── Layout ──────────────────────────────────────────────────────────────────
 
 function DashboardLayout() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Match /conversations/instagram → /conversations
+    const base = '/' + location.pathname.split('/').filter(Boolean)[0] || '/';
+    const label = PAGE_TITLES[base] || PAGE_TITLES[location.pathname] || 'ONE AI';
+    document.title = label === 'ONE AI' ? 'ONE AI' : `${label} — ONE AI`;
+  }, [location.pathname]);
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
