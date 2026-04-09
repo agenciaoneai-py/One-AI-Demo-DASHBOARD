@@ -3,8 +3,7 @@ import express from 'express';
 // import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { generateAgentResponse } from './agents/demo-agent.js';
-import { calculateTypingDelay, simulateTyping } from './services/humanizer.js';
+import { handleDemoChat } from './agents/demo-agent.js';
 import { generateFakeStats, generateDashboardStats, generateFakeConversations, generateFakeLeads, generateFakeChannelConversations } from './services/fake-data.js';
 import configRoutes from './routes/config.js';
 import productsRoutes from './routes/products.js';
@@ -42,107 +41,39 @@ app.use(express.json());
 app.use('/api/products', productsRoutes);
 app.use('/api/contacts', contactsRoutes);
 
-// Almacenar conversaciones en memoria (para demo)
-const conversations = new Map();
-
-// Endpoint: Recibir mensaje
+// Endpoint: Chat con el agente IA (function calling + vision)
 app.post('/webhook/demo-message', async (req, res) => {
-  const { userId, message, platform } = req.body;
-  
-  console.log(`📩 Mensaje recibido de ${userId}: ${message}`);
-  
-  // Obtener historial
-  let history = conversations.get(userId) || [];
-  
-  // Socket.IO deshabilitado
-  // io.emit('userMessage', {
-  //   userId,
-  //   platform: platform || 'instagram',
-  //   message,
-  //   timestamp: new Date().toISOString()
-  // });
-
-  // io.emit('setterTyping', { userId, isTyping: true });
-  
   try {
-    // Obtener el clientId del primer cliente disponible
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id')
-      .limit(1)
-      .single();
+    const { userId, message, platform, imageUrl } = req.body;
 
-    const clientId = client?.id;
-
-    // Generar respuesta del agente
-    const aiResponse = await generateAgentResponse(history, message, clientId);
-
-    console.log('🔍 Respuesta del agente:', {
-      text: aiResponse.text,
-      productsFound: aiResponse.products?.length || 0
-    });
-
-    // Log detallado de productos con imágenes
-    if (aiResponse.products && aiResponse.products.length > 0) {
-      console.log('📦 Productos encontrados:');
-      aiResponse.products.forEach(p => {
-        console.log(`  - ${p.name}`);
-        console.log(`    image_urls:`, p.image_urls || 'NO DEFINIDO');
-        console.log(`    Tiene imágenes:`, !!p.image_urls && p.image_urls.length > 0);
-      });
+    if (!userId || (!message && !imageUrl)) {
+      return res.status(400).json({ error: 'userId y message (o imageUrl) son requeridos' });
     }
 
-    // Calcular delay natural
-    const typingDelay = calculateTypingDelay(aiResponse.text);
+    console.log(`📩 [${userId}] ${message || '(imagen)'}`);
 
-    console.log(`⏱️ Simulando escritura: ${typingDelay}ms`);
+    const result = await handleDemoChat(
+      userId,
+      message || '',
+      platform || 'demo',
+      imageUrl || null,
+    );
 
-    // Simular que el setter está escribiendo
-    await simulateTyping(typingDelay);
+    // Humanización: typing delay basado en longitud (1.5–3s)
+    const delay = Math.min(Math.max((result.response?.length || 0) * 15, 1500), 3000);
+    await new Promise(resolve => setTimeout(resolve, delay));
 
-    // Actualizar historial
-    history.push({ role: 'user', content: message });
-    history.push({ role: 'assistant', content: aiResponse.text });
-    conversations.set(userId, history);
+    console.log(`✅ Respuesta enviada (${result.products.length} productos${result.appointment ? ', cita creada' : ''}${result.order ? ', pedido creado' : ''})`);
 
-    // Socket.IO deshabilitado
-    // io.emit('setterMessage', {
-    //   userId,
-    //   message: aiResponse.text,
-    //   timestamp: Date.now()
-    // });
-
-    // if (aiResponse.products && aiResponse.products.length > 0) {
-    //   console.log('📦 Enviando productos:', aiResponse.products.length);
-    //   io.emit('setterProducts', {
-    //     userId,
-    //     products: aiResponse.products,
-    //     timestamp: Date.now()
-    //   });
-    // }
-
-    // io.emit('setterTyping', { userId, isTyping: false });
-
-    console.log(`✅ Agente respondió: ${aiResponse.text}`);
-
-    // Log de lo que se envía al frontend
-    console.log('📤 Enviando al frontend:', {
-      success: true,
-      responseLength: aiResponse.text.length,
-      productsCount: aiResponse.products?.length || 0,
-      productsPreview: aiResponse.products?.map(p => ({
-        name: p.name,
-        hasImages: !!p.image_urls && p.image_urls.length > 0,
-        imageCount: p.image_urls?.length || 0
-      }))
+    res.json({
+      response: result.response,
+      products: result.products || [],
+      appointment: result.appointment || null,
+      order: result.order || null,
     });
-
-    res.json({ success: true, response: aiResponse.text, products: aiResponse.products });
-    
   } catch (error) {
-    console.error('❌ Error:', error);
-    // io.emit('setterTyping', { userId, isTyping: false });
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Webhook error:', error);
+    res.status(500).json({ error: 'Error procesando mensaje' });
   }
 });
 
@@ -196,25 +127,6 @@ app.get('/api/demo/stats', async (req, res) => {
 // Endpoint: Conversaciones fake
 app.get('/api/demo/conversations', (req, res) => {
   res.json(generateFakeConversations());
-});
-
-// Endpoint: Obtener historial de conversación específica
-app.get('/api/demo/conversation/:convId', (req, res) => {
-  const { convId } = req.params;
-  const history = conversations.get(convId) || [];
-
-  // Convertir historial a formato de mensajes para el frontend
-  const messages = history.map((msg) => ({
-    type: msg.role === 'user' ? 'user' : 'agent',
-    text: msg.content,
-    timestamp: new Date().toISOString()
-  }));
-
-  res.json({
-    success: true,
-    messages,
-    isTyping: false
-  });
 });
 
 // Endpoint: Leads fake

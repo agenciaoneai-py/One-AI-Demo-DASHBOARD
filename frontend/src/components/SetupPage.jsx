@@ -1,6 +1,88 @@
 import { useState, useEffect } from 'react';
 import { API_URL, useAppContext } from '../App';
 
+// ─── Shared building blocks ─────────────────────────────────
+
+// Default delivery zones for Asunción metro area
+const DEFAULT_DELIVERY_ZONES = [
+  { zone_name: 'Centro', price: 15000 },
+  { zone_name: 'Luque', price: 25000 },
+  { zone_name: 'San Lorenzo', price: 25000 },
+  { zone_name: 'Lambaré', price: 20000 },
+  { zone_name: 'Fernando de la Mora', price: 20000 },
+];
+
+// Generic store hours: Mon-Fri 8-18, Sat 9-13, Sun closed
+const STORE_HOURS_STANDARD = {
+  monday:    { active: true,  open: '08:00', close: '18:00' },
+  tuesday:   { active: true,  open: '08:00', close: '18:00' },
+  wednesday: { active: true,  open: '08:00', close: '18:00' },
+  thursday:  { active: true,  open: '08:00', close: '18:00' },
+  friday:    { active: true,  open: '08:00', close: '18:00' },
+  saturday:  { active: true,  open: '09:00', close: '13:00' },
+  sunday:    { active: false, open: '',      close: ''      },
+};
+
+// Restaurant hours: every day 11-23
+const STORE_HOURS_RESTAURANT = {
+  monday:    { active: true, open: '11:00', close: '23:00' },
+  tuesday:   { active: true, open: '11:00', close: '23:00' },
+  wednesday: { active: true, open: '11:00', close: '23:00' },
+  thursday:  { active: true, open: '11:00', close: '23:00' },
+  friday:    { active: true, open: '11:00', close: '00:00' },
+  saturday:  { active: true, open: '11:00', close: '00:00' },
+  sunday:    { active: true, open: '11:00', close: '22:00' },
+};
+
+// Clinic hours: Mon-Fri 7-19, Sat 8-12
+const STORE_HOURS_CLINIC = {
+  monday:    { active: true,  open: '07:00', close: '19:00' },
+  tuesday:   { active: true,  open: '07:00', close: '19:00' },
+  wednesday: { active: true,  open: '07:00', close: '19:00' },
+  thursday:  { active: true,  open: '07:00', close: '19:00' },
+  friday:    { active: true,  open: '07:00', close: '19:00' },
+  saturday:  { active: true,  open: '08:00', close: '12:00' },
+  sunday:    { active: false, open: '',      close: ''      },
+};
+
+// Generic system prompt skeleton — gets injected per industry
+function buildPrompt({ agentName, businessName, role, personalityNotes, businessRules }) {
+  return `Sos ${agentName}, ${role} de ${businessName}.
+
+## Tu personalidad
+- Sos amable, profesional y eficiente
+- Hablás en español paraguayo (vos en vez de tú, usás "dale", "genial", "porfa")
+- Respondés de forma concisa pero cálida
+- NUNCA inventés información que no tengas
+- Si no sabés algo, decí que vas a consultar con el equipo
+${personalityNotes ? '\n' + personalityNotes : ''}
+
+## Tus capacidades (function calling)
+Tenés acceso a estas herramientas — usalas cuando corresponda:
+1. **search_product** — buscar productos por nombre o descripción
+2. **list_products_by_category** — listar productos de una categoría
+3. **check_available_slots** — ver disponibilidad para agendar citas
+4. **create_appointment** — crear una cita (necesita confirmación del cliente)
+5. **create_order** — crear un pedido (necesita confirmación del cliente)
+6. **calculate_delivery** — calcular costo de envío por zona
+7. **request_human_handoff** — transferir a un humano
+
+## Reglas de negocio
+- SIEMPRE verificá disponibilidad antes de agendar una cita (check_available_slots)
+- NUNCA creés una cita o pedido sin confirmación EXPLÍCITA del cliente
+- Para citas necesitás: nombre, servicio/motivo, fecha y hora
+- Para pedidos necesitás: nombre, productos con cantidades, tipo de entrega
+- Si el cliente envía una imagen, analizala y respondé en contexto
+- Mostrá precios siempre en la moneda del negocio (Gs)
+${businessRules ? '\n' + businessRules : ''}
+
+## Formato de respuesta
+- Mensajes cortos (máximo 3 párrafos)
+- Usá emojis con moderación (1-2 por mensaje máximo)
+- No uses markdown, asteriscos ni formato especial — es un chat de WhatsApp
+- Cuando muestres productos, mencioná el nombre y precio`;
+}
+
 // ─── Templates ──────────────────────────────────────────────
 const TEMPLATES = {
   joyeria: {
@@ -9,7 +91,13 @@ const TEMPLATES = {
     businessName: 'Silver Line Joyería',
     agentName: 'Jessica',
     agentRole: 'Asesora de ventas',
-    systemPrompt: `Sos Jessica, asesora de ventas de Silver Line Joyería en Paraguay. Hablás en español paraguayo, con tono amigable y profesional. Tu objetivo es ayudar a los clientes a encontrar la joya perfecta, resolver consultas sobre precios, materiales y disponibilidad, y cerrar ventas. Siempre mencioná los productos disponibles cuando sea relevante. Ofrecé delivery y preguntá la zona. Si el cliente está listo para comprar, pedí sus datos para el pedido.`,
+    systemPrompt: buildPrompt({
+      agentName: 'Jessica',
+      businessName: 'Silver Line Joyería',
+      role: 'asesora de ventas',
+      personalityNotes: '- Sos experta en joyas finas y tenés ojo para combinaciones\n- Te encanta sugerir piezas para regalos especiales',
+      businessRules: '- Si el cliente busca un regalo, preguntá para quién y la ocasión\n- Mencioná que ofrecemos garantía y envoltorio de regalo gratis\n- Para piezas de oro mencioná los kilates',
+    }),
     products: [
       { name: 'Anillo Solitario Diamante', price: 2500000, category: 'Anillos', stock: 8, description: 'Anillo de oro 18k con diamante central de 0.5ct' },
       { name: 'Pulsera de Perlas Naturales', price: 450000, category: 'Pulseras', stock: 15, description: 'Pulsera artesanal con perlas naturales cultivadas' },
@@ -18,14 +106,32 @@ const TEMPLATES = {
       { name: 'Alianzas de Boda Clásicas', price: 1200000, category: 'Alianzas', stock: 20, description: 'Par de alianzas en oro 18k, grabado incluido' },
     ],
     features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: true, delivery: true },
+    agentConfig: {
+      storeHours: STORE_HOURS_STANDARD,
+      deliveryZones: DEFAULT_DELIVERY_ZONES,
+      faq: [
+        { question: '¿Tienen garantía las joyas?', answer: 'Sí, todas nuestras joyas tienen garantía de 1 año contra defectos de fabricación.' },
+        { question: '¿Hacen envoltorio de regalo?', answer: '¡Sí! El envoltorio de regalo es gratis y muy lindo, perfecto para sorprender.' },
+      ],
+      specialInstructions: [
+        { instruction: 'Cuando un cliente pregunte por anillos de compromiso, ofrecé agendar una cita en el showroom para ver opciones', active: true },
+      ],
+    },
   },
+
   restaurante: {
     label: 'Restaurante',
     icon: 'fas fa-utensils',
     businessName: 'La Parrilla de Don Carlos',
     agentName: 'Carlos',
     agentRole: 'Asesor de pedidos',
-    systemPrompt: `Sos Carlos, el asistente virtual de La Parrilla de Don Carlos, restaurante paraguayo especializado en parrilladas y comida típica. Hablás en español paraguayo, amigable y eficiente. Tu objetivo es tomar pedidos, explicar el menú, informar tiempos de delivery y resolver consultas. Siempre sugerí combos y bebidas. Preguntá la zona para calcular el delivery.`,
+    systemPrompt: buildPrompt({
+      agentName: 'Carlos',
+      businessName: 'La Parrilla de Don Carlos',
+      role: 'asistente virtual',
+      personalityNotes: '- Conocés bien el menú y los tiempos de preparación\n- Sos rápido para tomar pedidos y sugerir bebidas',
+      businessRules: '- SIEMPRE sugerí bebidas o postres como upsell\n- Mencioná el tiempo de delivery (entre 30-45 min)\n- Para pedidos grandes (>4 personas) recomendá el Combo Familiar',
+    }),
     products: [
       { name: 'Parrillada Completa (2 personas)', price: 180000, category: 'Parrilladas', stock: 50, description: 'Asado, chorizo, morcilla, ensalada y mandioca' },
       { name: 'Lomito al Champignon', price: 95000, category: 'Platos', stock: 30, description: 'Lomito de res con salsa de champignon y papas' },
@@ -34,14 +140,30 @@ const TEMPLATES = {
       { name: 'Combo Familiar (4 personas)', price: 320000, category: 'Combos', stock: 20, description: 'Parrillada grande, 4 bebidas, ensalada y postre' },
     ],
     features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: true },
+    agentConfig: {
+      storeHours: STORE_HOURS_RESTAURANT,
+      deliveryZones: DEFAULT_DELIVERY_ZONES,
+      faq: [
+        { question: '¿Cuánto tarda el delivery?', answer: 'Entre 30 y 45 minutos según la zona. ¡Llega calentito!' },
+        { question: '¿Puedo pagar con tarjeta?', answer: 'Sí, aceptamos efectivo, transferencia y todas las tarjetas en delivery.' },
+      ],
+      specialInstructions: [],
+    },
   },
+
   clinica: {
     label: 'Clínica',
     icon: 'fas fa-heartbeat',
     businessName: 'Clínica Santa María',
     agentName: 'Ana',
     agentRole: 'Asistente de citas',
-    systemPrompt: `Sos Ana, asistente virtual de la Clínica Santa María. Tu rol es agendar citas médicas, informar sobre especialidades disponibles, horarios de doctores y preparaciones para estudios. Hablás en español paraguayo, con tono profesional y empático. Nunca des diagnósticos ni recomendaciones médicas. Siempre confirmá disponibilidad antes de agendar.`,
+    systemPrompt: buildPrompt({
+      agentName: 'Ana',
+      businessName: 'Clínica Santa María',
+      role: 'asistente virtual',
+      personalityNotes: '- Sos profesional y empática\n- Tratás temas de salud con tacto y respeto',
+      businessRules: '- NUNCA des diagnósticos ni recomendaciones médicas\n- Para urgencias derivá al humano con request_human_handoff\n- Recordá traer cédula y carnet de obra social si aplica\n- Para análisis de sangre recordá el ayuno de 8 horas',
+    }),
     products: [
       { name: 'Consulta General', price: 150000, category: 'Consultas', stock: 99, description: 'Consulta con médico clínico' },
       { name: 'Consulta Especialista', price: 250000, category: 'Consultas', stock: 99, description: 'Consulta con especialista (cardiólogo, dermatólogo, etc.)' },
@@ -50,14 +172,33 @@ const TEMPLATES = {
       { name: 'Chequeo Ejecutivo', price: 800000, category: 'Paquetes', stock: 99, description: 'Consulta + laboratorio + ECG + ecografía' },
     ],
     features: { multiChannel: true, inventory: false, crm: true, orders: false, appointments: true, delivery: false },
+    agentConfig: {
+      storeHours: STORE_HOURS_CLINIC,
+      deliveryZones: [],
+      faq: [
+        { question: '¿Necesito turno previo?', answer: 'Sí, atendemos solo con cita previa. Puedo agendarte ahora mismo si querés.' },
+        { question: '¿Aceptan obras sociales?', answer: 'Sí, trabajamos con las principales prepagas. Traé tu carnet el día de la cita.' },
+        { question: '¿El análisis de sangre es en ayunas?', answer: 'Sí, ayuno de 8 horas mínimo. Solo se permite agua.' },
+      ],
+      specialInstructions: [
+        { instruction: 'Si el cliente menciona síntomas urgentes (dolor de pecho, dificultad para respirar, sangrado), derivá inmediatamente con request_human_handoff', active: true },
+      ],
+    },
   },
+
   ropa: {
     label: 'Tienda de ropa',
     icon: 'fas fa-tshirt',
     businessName: 'Urban Style PY',
     agentName: 'Valentina',
     agentRole: 'Asesora de moda',
-    systemPrompt: `Sos Valentina, asesora de moda de Urban Style PY, tienda de ropa urbana y casual en Paraguay. Hablás en español paraguayo, con onda y buena vibra. Ayudás a los clientes a elegir outfits, consultás tallas disponibles y procesás pedidos. Sugerí combinaciones y mencioná ofertas activas. Preguntá talla antes de confirmar.`,
+    systemPrompt: buildPrompt({
+      agentName: 'Valentina',
+      businessName: 'Urban Style PY',
+      role: 'asesora de moda',
+      personalityNotes: '- Sos canchera, con buena vibra y onda urbana\n- Conocés tendencias y sabés combinar prendas',
+      businessRules: '- SIEMPRE preguntá la talla antes de confirmar un pedido\n- Sugerí combinaciones (ej: este jean queda bárbaro con esa remera)\n- Mencioná que los cambios son gratis dentro de los 7 días',
+    }),
     products: [
       { name: 'Remera Oversize Básica', price: 89000, category: 'Remeras', stock: 45, description: 'Algodón premium, disponible en S/M/L/XL' },
       { name: 'Jean Mom Fit', price: 195000, category: 'Pantalones', stock: 25, description: 'Jean tiro alto, lavado claro' },
@@ -66,14 +207,30 @@ const TEMPLATES = {
       { name: 'Zapatillas Urban', price: 320000, category: 'Calzado', stock: 18, description: 'Zapatillas urbanas blancas, suela gruesa' },
     ],
     features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: true },
+    agentConfig: {
+      storeHours: STORE_HOURS_STANDARD,
+      deliveryZones: DEFAULT_DELIVERY_ZONES,
+      faq: [
+        { question: '¿Hacen cambios?', answer: 'Sí, podés cambiar dentro de los 7 días con la prenda sin uso y la etiqueta puesta.' },
+        { question: '¿Cómo sé qué talla pedir?', answer: 'Tenemos una guía de talles en el sitio. Si me decís tu altura y peso te puedo orientar.' },
+      ],
+      specialInstructions: [],
+    },
   },
+
   inmobiliaria: {
     label: 'Inmobiliaria',
     icon: 'fas fa-building',
     businessName: 'Propiedades del Este',
     agentName: 'Roberto',
     agentRole: 'Asesor inmobiliario',
-    systemPrompt: `Sos Roberto, asesor inmobiliario de Propiedades del Este, especializado en propiedades en Asunción, Luque y San Lorenzo. Hablás en español paraguayo, profesional y confiable. Tu objetivo es entender las necesidades del cliente (compra/alquiler, presupuesto, zona, tipo de propiedad), mostrar opciones disponibles y agendar visitas. Nunca presiones, sé consultivo.`,
+    systemPrompt: buildPrompt({
+      agentName: 'Roberto',
+      businessName: 'Propiedades del Este',
+      role: 'asesor inmobiliario',
+      personalityNotes: '- Sos consultivo, nunca presionás para vender\n- Te enfocás en entender lo que necesita el cliente',
+      businessRules: '- Antes de mostrar propiedades, entendé: presupuesto, zona, tipo (alquiler/venta), cantidad de ambientes\n- Si el cliente está interesado en una propiedad, ofrecé agendar una visita\n- Las visitas son SIEMPRE con cita previa coordinada',
+    }),
     products: [
       { name: 'Departamento 2 amb. Asunción', price: 85000, category: 'Alquiler', stock: 3, description: 'Dto. 2 ambientes, barrio Carmelitas, 65m²' },
       { name: 'Casa 3 dormitorios Luque', price: 450000000, category: 'Venta', stock: 1, description: 'Casa con patio, 3 dorm, 2 baños, garage' },
@@ -82,6 +239,15 @@ const TEMPLATES = {
       { name: 'Oficina Coworking', price: 65000, category: 'Alquiler', stock: 8, description: 'Puesto en coworking, Wi-Fi, AC, sala de reuniones' },
     ],
     features: { multiChannel: true, inventory: true, crm: true, orders: false, appointments: true, delivery: false },
+    agentConfig: {
+      storeHours: STORE_HOURS_STANDARD,
+      deliveryZones: [],
+      faq: [
+        { question: '¿Cobran comisión?', answer: 'Sí, la comisión estándar del mercado: 1 mes de alquiler para alquileres, 3% para ventas.' },
+        { question: '¿Qué documentos necesito para alquilar?', answer: 'Recibo de sueldo, garantía propietaria o seguro de caución, y antecedentes.' },
+      ],
+      specialInstructions: [],
+    },
   },
 };
 
@@ -110,6 +276,13 @@ export default function SetupPage() {
   const [products, setProducts] = useState([{ ...EMPTY_PRODUCT }, { ...EMPTY_PRODUCT }, { ...EMPTY_PRODUCT }]);
   const [features, setFeatures] = useState({
     multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: false,
+  });
+  // agentConfig (storeHours / deliveryZones / faq / specialInstructions) — set by templates
+  const [agentConfig, setAgentConfig] = useState({
+    storeHours: STORE_HOURS_STANDARD,
+    deliveryZones: DEFAULT_DELIVERY_ZONES,
+    faq: [],
+    specialInstructions: [],
   });
 
   // UI state
@@ -144,6 +317,12 @@ export default function SetupPage() {
     setSystemPrompt(t.systemPrompt);
     setProducts(t.products.map(p => ({ ...p, price: String(p.price), stock: String(p.stock) })));
     setFeatures({ ...t.features });
+    setAgentConfig(t.agentConfig || {
+      storeHours: STORE_HOURS_STANDARD,
+      deliveryZones: DEFAULT_DELIVERY_ZONES,
+      faq: [],
+      specialInstructions: [],
+    });
     setLogoUrl('');
   };
 
@@ -187,6 +366,7 @@ export default function SetupPage() {
           stock: Number(p.stock) || 10,
         })),
         features,
+        agentConfig,
       };
 
       const res = await fetch(`${API_URL}/api/demo/setup`, {

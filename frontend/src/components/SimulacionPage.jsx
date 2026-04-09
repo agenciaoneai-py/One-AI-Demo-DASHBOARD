@@ -17,6 +17,47 @@ function getExampleMessage(business = '') {
   return 'me interesa conocer sus productos';
 }
 
+// Resize an uploaded image client-side and return a base64 data URL.
+// Keeps payloads under control for the OpenAI vision API.
+async function resizeImageToBase64(file, maxDim = 1024) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatGsAmount(n) {
+  return Math.round(Number(n) || 0).toLocaleString('es-PY', { maximumFractionDigits: 0 });
+}
+
+function formatAppointmentDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-PY', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function Toast({ message, type = 'success', onDone }) {
@@ -148,7 +189,9 @@ function SimulacionPage({ config }) {
   const [promptEditorOpen, setPromptEditorOpen]  = useState(false);
   const [lightboxImage,    setLightboxImage]     = useState(null);
   const [toast,            setToast]             = useState(null);
+  const [pendingImage,     setPendingImage]      = useState(null);  // base64 data URL
   const messagesEndRef = useRef(null);
+  const fileInputRef   = useRef(null);
 
   // Derive display values from config
   const agentName    = config?.ownerName    || 'Agente IA';
@@ -163,18 +206,26 @@ function SimulacionPage({ config }) {
   }, [messages, isTyping]);
 
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() && !pendingImage) return;
 
     const text = inputMessage;
+    const imageUrl = pendingImage;
     setInputMessage('');
-    setMessages(prev => [...prev, { type: 'user', text, timestamp: new Date() }]);
+    setPendingImage(null);
+
+    setMessages(prev => [...prev, { type: 'user', text, imageUrl, timestamp: new Date() }]);
     setIsTyping(true);
 
     try {
       const res = await fetch(`${API_URL}/webhook/demo-message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: DEMO_USER_ID, message: text, platform: 'demo' }),
+        body: JSON.stringify({
+          userId: DEMO_USER_ID,
+          message: text,
+          platform: 'demo',
+          imageUrl: imageUrl || null,
+        }),
       });
 
       if (res.ok) {
@@ -183,11 +234,39 @@ function SimulacionPage({ config }) {
         if (data.products?.length > 0) {
           setMessages(prev => [...prev, { type: 'products', products: data.products, timestamp: new Date() }]);
         }
+        if (data.appointment) {
+          setMessages(prev => [...prev, { type: 'appointment', appointment: data.appointment, timestamp: new Date() }]);
+        }
+        if (data.order) {
+          setMessages(prev => [...prev, { type: 'order', order: data.order, timestamp: new Date() }]);
+        }
+      } else {
+        setToast({ type: 'error', message: 'Error al enviar mensaje' });
       }
     } catch (err) {
       console.error('Error:', err);
+      setToast({ type: 'error', message: 'Error de conexión' });
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setToast({ type: 'error', message: 'Solo se permiten imágenes' });
+      return;
+    }
+    try {
+      const dataUrl = await resizeImageToBase64(file, 1024);
+      setPendingImage(dataUrl);
+    } catch (err) {
+      console.error('Error procesando imagen:', err);
+      setToast({ type: 'error', message: 'Error procesando la imagen' });
+    } finally {
+      // Clear so re-uploading the same file fires onChange
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -261,8 +340,16 @@ function SimulacionPage({ config }) {
               {msg.type === 'user' && (
                 <div className="flex justify-end">
                   <div className="max-w-md">
-                    <div className="bg-[#dcf8c6] px-4 py-2 rounded-lg shadow">
-                      <p className="text-sm text-gray-900">{msg.text}</p>
+                    <div className="bg-[#dcf8c6] px-3 py-2 rounded-lg shadow">
+                      {msg.imageUrl && (
+                        <img
+                          src={msg.imageUrl}
+                          alt="Imagen enviada"
+                          className="rounded mb-2 max-w-full max-h-64 object-contain cursor-pointer hover:opacity-90 transition"
+                          onClick={() => setLightboxImage(msg.imageUrl)}
+                        />
+                      )}
+                      {msg.text && <p className="text-sm text-gray-900">{msg.text}</p>}
                       <p className="text-xs text-gray-500 text-right mt-1">
                         {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -288,32 +375,106 @@ function SimulacionPage({ config }) {
                 <div className="flex justify-start">
                   <div className="max-w-lg">
                     <div className="bg-white rounded-lg shadow overflow-hidden">
-                      {msg.products.map(product => (
-                        <div key={product.id} className="border-b last:border-b-0 p-3 hover:bg-gray-50">
-                          <div className="flex gap-3">
-                            {product.image_urls?.[0] && (
-                              <img
-                                src={product.image_urls[0]}
-                                alt={product.name}
-                                className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 transition flex-shrink-0"
-                                onClick={() => setLightboxImage(product.image_urls[0])}
-                                title="Click para ver en tamaño completo"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
-                              <p className="text-xs text-gray-500 mb-1 line-clamp-2">{product.description}</p>
-                              <p className="text-lg font-bold text-green-600">
-                                {product.price.toLocaleString('es-PY')} {product.currency === 'USD' ? 'USD' : 'Gs'}
-                              </p>
-                              {product.stock_quantity > 0 && (
-                                <p className="text-xs text-gray-500">Stock: {product.stock_quantity}</p>
+                      {msg.products.map((product, pIdx) => {
+                        const imgSrc = product.image_url || product.image_urls?.[0];
+                        const currency = product.currency === 'USD' ? 'USD' : 'Gs';
+                        const stockNum = product.stock ?? product.stock_quantity;
+                        return (
+                          <div key={pIdx} className="border-b last:border-b-0 p-3 hover:bg-gray-50">
+                            <div className="flex gap-3">
+                              {imgSrc && (
+                                <img
+                                  src={imgSrc}
+                                  alt={product.name}
+                                  className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 transition flex-shrink-0"
+                                  onClick={() => setLightboxImage(imgSrc)}
+                                  title="Click para ver en tamaño completo"
+                                />
                               )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
+                                {product.description && (
+                                  <p className="text-xs text-gray-500 mb-1 line-clamp-2">{product.description}</p>
+                                )}
+                                <p className="text-lg font-bold text-green-600">
+                                  {formatGsAmount(product.price)} {currency}
+                                </p>
+                                {stockNum > 0 && (
+                                  <p className="text-xs text-gray-500">Stock: {stockNum}</p>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       <p className="text-xs text-gray-400 text-right p-2">
+                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {msg.type === 'appointment' && msg.appointment && (
+                <div className="flex justify-start">
+                  <div className="max-w-md w-full">
+                    <div className="bg-white rounded-lg shadow border-l-4 border-emerald-500 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <i className="fas fa-circle-check text-emerald-500 text-lg" />
+                        <p className="text-sm font-bold text-emerald-700">Cita agendada</p>
+                      </div>
+                      <div className="space-y-1.5 text-sm text-gray-700">
+                        <p><i className="fas fa-user text-gray-400 w-5" /> {msg.appointment.customer_name}</p>
+                        <p><i className="fas fa-clipboard-list text-gray-400 w-5" /> {msg.appointment.service}</p>
+                        <p><i className="fas fa-calendar text-gray-400 w-5" /> {formatAppointmentDate(msg.appointment.date)}</p>
+                        <p><i className="fas fa-clock text-gray-400 w-5" /> {msg.appointment.time}</p>
+                        {msg.appointment.customer_phone && (
+                          <p><i className="fas fa-phone text-gray-400 w-5" /> {msg.appointment.customer_phone}</p>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 text-right mt-2">
+                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {msg.type === 'order' && msg.order && (
+                <div className="flex justify-start">
+                  <div className="max-w-md w-full">
+                    <div className="bg-white rounded-lg shadow border-l-4 border-indigo-500 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <i className="fas fa-bag-shopping text-indigo-500 text-lg" />
+                        <p className="text-sm font-bold text-indigo-700">Pedido creado</p>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <p><i className="fas fa-user text-gray-400 w-5" /> {msg.order.customer_name}</p>
+                        <div className="bg-gray-50 rounded p-2 space-y-1">
+                          {(msg.order.items || []).map((item, iIdx) => (
+                            <div key={iIdx} className="flex justify-between text-xs">
+                              <span className="text-gray-700">
+                                {item.quantity}× {item.product_name}
+                              </span>
+                              <span className="text-gray-500">
+                                {formatGsAmount(item.quantity * item.unit_price)} Gs
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t">
+                          <span className="text-xs font-semibold text-gray-600">TOTAL</span>
+                          <span className="font-bold text-indigo-700">
+                            {formatGsAmount(msg.order.total)} Gs
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          <i className={`fas ${msg.order.delivery_type === 'delivery' ? 'fa-truck' : 'fa-store'} mr-1.5`} />
+                          {msg.order.delivery_type === 'delivery' ? 'Delivery' : 'Retiro en local'}
+                          {msg.order.delivery_address && ` — ${msg.order.delivery_address}`}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400 text-right mt-2">
                         {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -340,7 +501,41 @@ function SimulacionPage({ config }) {
 
         {/* Input */}
         <div className="bg-gray-100 p-4 border-t border-gray-200">
-          <div className="flex gap-3">
+          {/* Image preview */}
+          {pendingImage && (
+            <div className="mb-3 flex items-center gap-3 bg-white rounded-lg p-2 border border-gray-200">
+              <img src={pendingImage} alt="Preview" className="w-14 h-14 object-cover rounded" />
+              <div className="flex-1 text-sm text-gray-600">
+                <p className="font-medium">Imagen lista para enviar</p>
+                <p className="text-xs text-gray-400">Escribí un mensaje opcional</p>
+              </div>
+              <button
+                onClick={() => setPendingImage(null)}
+                className="text-gray-400 hover:text-red-500 p-2"
+                title="Quitar imagen"
+              >
+                <i className="fas fa-xmark" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-3 items-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isTyping}
+              title="Adjuntar imagen"
+              className="w-12 h-12 flex items-center justify-center bg-white border border-gray-300 rounded-full text-gray-500 hover:text-green-600 hover:bg-green-50 transition disabled:opacity-50"
+            >
+              <i className="fas fa-paperclip text-lg" />
+            </button>
             <input
               type="text"
               value={inputMessage}
@@ -352,7 +547,7 @@ function SimulacionPage({ config }) {
             />
             <button
               onClick={sendMessage}
-              disabled={!inputMessage.trim() || isTyping}
+              disabled={(!inputMessage.trim() && !pendingImage) || isTyping}
               className="px-6 py-3 bg-green-600 text-white rounded-full font-semibold hover:bg-green-700 transition disabled:opacity-50"
             >
               <i className="fas fa-paper-plane" />

@@ -15,7 +15,8 @@ router.post('/setup', async (req, res) => {
     logoUrl = '',
     systemPrompt,
     products = [],
-    features = {}
+    features = {},
+    agentConfig = {}
   } = req.body;
 
   if (!businessName || !agentName || !systemPrompt) {
@@ -58,6 +59,14 @@ router.post('/setup', async (req, res) => {
       ...features
     };
 
+    // Merge agentConfig with sensible defaults
+    const mergedAgentConfig = {
+      storeHours: agentConfig.storeHours || {},
+      deliveryZones: agentConfig.deliveryZones || [],
+      faq: agentConfig.faq || [],
+      specialInstructions: agentConfig.specialInstructions || []
+    };
+
     const { error: clientError } = await supabase
       .from('clients')
       .update({
@@ -68,12 +77,13 @@ router.post('/setup', async (req, res) => {
           logo_url: logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(businessName)}&background=6366f1&color=fff`,
           features: mergedFeatures,
           last_setup: new Date().toISOString()
-        }
+        },
+        agent_config: mergedAgentConfig
       })
       .eq('id', clientId);
 
     if (clientError) throw new Error(`Error actualizando cliente: ${clientError.message}`);
-    console.log('  ✅ Cliente actualizado');
+    console.log('  ✅ Cliente actualizado (incluye agent_config)');
 
     // --- STEP 3: Update agent prompt ---
     // Try update first, insert if none exists
@@ -193,6 +203,32 @@ router.post('/setup', async (req, res) => {
     const seedResult = await seedFakeData(businessName, agentName);
     console.log(`  ✅ ${seedResult.contactsInserted} contactos demo creados`);
 
+    // --- STEP 6.5: Re-seed delivery zones ---
+    await supabase
+      .from('delivery_zones')
+      .delete()
+      .eq('client_id', clientId);
+
+    const zoneRows = (mergedAgentConfig.deliveryZones || [])
+      .filter(z => z && z.zone_name && z.price != null)
+      .map(z => ({
+        client_id: clientId,
+        zone_name: z.zone_name,
+        price: Number(z.price),
+        is_active: true
+      }));
+
+    if (zoneRows.length > 0) {
+      const { error: zonesError } = await supabase
+        .from('delivery_zones')
+        .insert(zoneRows);
+      if (zonesError) {
+        console.warn('  ⚠️ Error insertando delivery zones:', zonesError.message);
+      } else {
+        console.log(`  ✅ ${zoneRows.length} zonas de delivery cargadas`);
+      }
+    }
+
     // --- STEP 7: Update in-memory client config ---
     CLIENT_CONFIG.businessName = businessName;
     CLIENT_CONFIG.ownerName = agentName;
@@ -216,6 +252,7 @@ router.post('/setup', async (req, res) => {
         agentRole,
         productsInserted: products.length,
         contactsSeeded: seedResult.contactsInserted,
+        deliveryZones: (mergedAgentConfig.deliveryZones || []).length,
         features: mergedFeatures
       }
     });
