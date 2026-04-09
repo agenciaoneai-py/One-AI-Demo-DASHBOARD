@@ -39,7 +39,10 @@ router.post('/setup', async (req, res) => {
     if (!client) {
       const { data: newClient, error: createError } = await supabase
         .from('clients')
-        .insert({ business_name: businessName })
+        .insert({
+          business_name: businessName,
+          industry: 'demo',  // NOT NULL en el schema real
+        })
         .select('id')
         .single();
       if (createError) throw new Error(`Error creando cliente: ${createError.message}`);
@@ -106,6 +109,7 @@ router.post('/setup', async (req, res) => {
         .insert({
           client_id: clientId,
           prompt_text: systemPrompt,
+          industry: 'demo',  // NOT NULL en el schema real
           is_active: true
         });
       if (promptError) throw new Error(`Error insertando prompt: ${promptError.message}`);
@@ -155,13 +159,17 @@ router.post('/setup', async (req, res) => {
 
     // Insert new products
     if (products.length > 0) {
-      const productRows = products.map(p => ({
+      // SKU autogenerado: products.sku es NOT NULL en el schema real.
+      // Formato: SKU-001, SKU-002, ...
+      const productRows = products.map((p, idx) => ({
+        sku: `SKU-${String(idx + 1).padStart(3, '0')}`,
         name: p.name,
         price: p.price,
         currency: p.currency || 'Gs',
         description: p.description || '',
         seller_pitch: p.description || '',
         stock_quantity: p.stock ?? 10,
+        category: p.category || null,         // legacy text column
         category_id: categoryMap.get(p.category) || null,
         image_urls: p.image_url ? [p.image_url] : [],
         tags: p.tags || [],
