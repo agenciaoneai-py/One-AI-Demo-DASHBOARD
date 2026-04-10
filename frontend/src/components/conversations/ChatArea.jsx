@@ -227,6 +227,10 @@ export default function ChatArea({ conversation, platform, onBack, onTogglePanel
                       </span>
                     )}
                     <div className={`px-4 py-2.5 rounded-2xl bg-gradient-to-r ${pCfg.messageGradient} text-white rounded-br-sm shadow-sm`}>
+                      {msg.image && (
+                        <img src={msg.image} alt="Producto" loading="lazy"
+                          style={{ width: '200px', height: '140px', objectFit: 'cover', borderRadius: '6px', display: 'block', marginBottom: '6px' }} />
+                      )}
                       <p className="text-sm leading-relaxed">{msg.text}</p>
                       <div className="flex items-center gap-1 mt-1 justify-end text-white/50">
                         <span className="text-[10px]">{msg.sender === 'ai' ? 'IA • ' : ''}{formatTime(msg.timestamp)}</span>
@@ -264,6 +268,20 @@ export default function ChatArea({ conversation, platform, onBack, onTogglePanel
           <button onClick={scrollToBottom}
             className="w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-slate-600 hover:bg-gray-50 transition-all duration-200">
             <i className="fas fa-chevron-down text-sm" />
+          </button>
+        </div>
+      )}
+
+      {/* AI paused banner */}
+      {conversation.aiPaused && conversation.pauseReason && (
+        <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center gap-3">
+          <i className="fas fa-pause-circle text-amber-500" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-800">IA pausada</p>
+            <p className="text-xs text-amber-600 truncate">{conversation.pauseReason}</p>
+          </div>
+          <button onClick={toggleAI} className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 transition-colors flex-shrink-0">
+            Reanudar IA
           </button>
         </div>
       )}
