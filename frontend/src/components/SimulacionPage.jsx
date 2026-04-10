@@ -426,18 +426,18 @@ function SimulacionPage({ config }) {
 
                   {/* ── Products carousel ── */}
                   {msg.type === 'products' && msg.products?.length > 0 && (
-                    <>
+                    <div className="flex flex-col gap-1">
                       {msg.products.slice(0, 3).map((p, pIdx) => {
                         const imgSrc = p.image_url || p.image_urls?.[0];
                         const hasPrice = p.price && Number(p.price) > 0;
                         const stockNum = p.stock ?? p.stock_quantity;
                         return (
-                          <div key={pIdx} className="flex justify-start mb-1">
-                            <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ maxWidth: '260px' }}>
+                          <div key={pIdx} className="self-start">
+                            <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ width: '220px' }}>
                               {imgSrc && (
                                 <img src={imgSrc} alt={p.name} loading="lazy"
                                   className="w-full object-cover cursor-pointer"
-                                  style={{ height: '160px' }}
+                                  style={{ height: '150px' }}
                                   onClick={() => setLightboxImage(imgSrc)} />
                               )}
                               <div className="px-3 py-2">
@@ -457,7 +457,7 @@ function SimulacionPage({ config }) {
                           </div>
                         );
                       })}
-                    </>
+                    </div>
                   )}
 
                   {/* ── Appointment card ── */}
