@@ -240,7 +240,8 @@ router.post('/setup', async (req, res) => {
 
     // --- STEP 7: Update in-memory client config ---
     CLIENT_CONFIG.businessName = businessName;
-    CLIENT_CONFIG.ownerName = agentName;
+    CLIENT_CONFIG.ownerName = req.body.ownerName || businessName;
+    CLIENT_CONFIG.ownerEmail = req.body.ownerEmail || 'demo@oneai.com';
     CLIENT_CONFIG.logoUrl = logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(businessName)}&background=6366f1&color=fff`;
     CLIENT_CONFIG.features = {
       ...CLIENT_CONFIG.features,

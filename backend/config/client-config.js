@@ -13,6 +13,7 @@ const CLIENT_CONFIG = {
   
   // Contacto
   ownerName: "Demo Owner",
+  ownerEmail: "demo@oneai.com",
   country: "Paraguay",
   
   // Features habilitadas

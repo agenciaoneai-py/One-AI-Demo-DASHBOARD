@@ -107,13 +107,14 @@ function App() {
 
 function DashboardLayout() {
   const location = useLocation();
+  const { config } = useAppContext();
+  const brandName = (config?.businessName && config.businessName !== 'Demo Business') ? config.businessName : 'ONE AI';
 
   useEffect(() => {
-    // Match /conversations/instagram → /conversations
     const base = '/' + location.pathname.split('/').filter(Boolean)[0] || '/';
-    const label = PAGE_TITLES[base] || PAGE_TITLES[location.pathname] || 'ONE AI';
-    document.title = label === 'ONE AI' ? 'ONE AI' : `${label} — ONE AI`;
-  }, [location.pathname]);
+    const label = PAGE_TITLES[base] || PAGE_TITLES[location.pathname] || brandName;
+    document.title = label === brandName ? brandName : `${label} — ${brandName}`;
+  }, [location.pathname, brandName]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -154,7 +155,7 @@ const NAV_ITEMS = [
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
 function Sidebar() {
-  const { stats } = useAppContext();
+  const { config, stats } = useAppContext();
   const location  = useLocation();
   const navigate  = useNavigate();
 
@@ -165,6 +166,13 @@ function Sidebar() {
   const dropdownRef = useRef(null);
 
   const badges = stats?.badges || {};
+
+  // Dynamic branding from config
+  const brandName = (config?.businessName && config.businessName !== 'Demo Business') ? config.businessName : 'ONE AI';
+  const brandLogo = config?.logoUrl || null;
+  const adminName = config?.ownerName || 'Demo Owner';
+  const adminEmail = config?.ownerEmail || 'demo@oneai.com';
+  const adminInitials = adminName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
   // Mobile detection
   useEffect(() => {
@@ -233,10 +241,13 @@ function Sidebar() {
           </button>
           {!isCollapsed && (
             <div className="flex items-center gap-3 flex-1 ml-3 min-w-0">
-              <div className="w-10 h-10 rounded-full flex-shrink-0 bg-gray-100 flex items-center justify-center">
-                <span className="text-xs font-bold text-gray-600">ONE AI</span>
+              <div className="w-10 h-10 rounded-full flex-shrink-0 bg-gray-100 flex items-center justify-center overflow-hidden">
+                {brandLogo
+                  ? <img src={brandLogo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  : <span className="text-xs font-bold text-gray-600">{brandName.substring(0, 4)}</span>
+                }
               </div>
-              <span className="font-bold text-sm text-gray-900 truncate">ONE AI</span>
+              <span className="font-bold text-sm text-gray-900 truncate">{brandName}</span>
             </div>
           )}
         </div>
@@ -320,7 +331,7 @@ function Sidebar() {
             className="w-full flex justify-center py-1 hover:opacity-80 transition-opacity duration-200"
           >
             <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
-              DO
+              {adminInitials}
             </div>
           </button>
         ) : (
@@ -329,11 +340,11 @@ function Sidebar() {
             className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
           >
             <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
-              DO
+              {adminInitials}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">Demo Owner</p>
-              <p className="text-xs text-gray-400 truncate">demo@oneai.com</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{adminName}</p>
+              <p className="text-xs text-gray-400 truncate">{adminEmail}</p>
             </div>
             <i className={`fas fa-chevron-${userDropdownOpen ? 'up' : 'down'} text-gray-400 text-sm flex-shrink-0`} />
           </button>
@@ -354,13 +365,16 @@ function Sidebar() {
             <i className="fas fa-bars text-lg" />
           </button>
           <div className="flex items-center gap-2 flex-1 ml-2 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-gray-600">ONE AI</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {brandLogo
+                ? <img src={brandLogo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                : <span className="text-[10px] font-bold text-gray-600">{brandName.substring(0, 4)}</span>
+              }
             </div>
-            <span className="font-semibold text-sm text-gray-900 truncate">ONE AI</span>
+            <span className="font-semibold text-sm text-gray-900 truncate">{brandName}</span>
           </div>
           <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-            DO
+            {adminInitials}
           </div>
         </div>
       )}

@@ -408,6 +408,8 @@ Documentos para alquilar: recibo de sueldo, garantia propietaria o seguro de cau
     businessName: 'Zamphiropolos',
     agentName: 'Ana',
     agentRole: 'Asesora comercial virtual',
+    ownerName: 'Zamphiropolos Admin',
+    ownerEmail: 'contacto@zamphiropolos.com',
     systemPrompt: buildPrompt({
       agentName: 'Ana',
       businessName: 'Zamphiropolos',
@@ -535,6 +537,8 @@ export default function SetupPage() {
   const [agentRole, setAgentRole] = useState('Asesora de ventas');
   const [logoUrl, setLogoUrl] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [ownerNameField, setOwnerNameField] = useState('');
+  const [ownerEmailField, setOwnerEmailField] = useState('');
   const [products, setProducts] = useState([{ ...EMPTY_PRODUCT }, { ...EMPTY_PRODUCT }, { ...EMPTY_PRODUCT }]);
   const [features, setFeatures] = useState({
     multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: false,
@@ -585,7 +589,9 @@ export default function SetupPage() {
       faq: [],
       specialInstructions: [],
     });
-    setLogoUrl('');
+    setOwnerNameField(t.ownerName || t.businessName);
+    setOwnerEmailField(t.ownerEmail || '');
+    setLogoUrl(t.logoUrl || '');
   };
 
   // Product table helpers
@@ -618,6 +624,8 @@ export default function SetupPage() {
         agentName: agentName.trim(),
         agentRole: agentRole.trim() || 'Asesora de ventas',
         logoUrl: logoUrl.trim(),
+        ownerName: ownerNameField.trim() || businessName.trim(),
+        ownerEmail: ownerEmailField.trim() || 'demo@oneai.com',
         systemPrompt: systemPrompt.trim(),
         products: validProducts.map(p => ({
           name: p.name.trim(),
