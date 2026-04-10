@@ -424,41 +424,32 @@ function SimulacionPage({ config }) {
                     </div>
                   )}
 
-                  {/* ── Products carousel ── */}
-                  {msg.type === 'products' && msg.products?.length > 0 && (
-                    <div className="flex flex-col gap-1">
-                      {msg.products.slice(0, 3).map((p, pIdx) => {
-                        const imgSrc = p.image_url || p.image_urls?.[0];
-                        const hasPrice = p.price && Number(p.price) > 0;
-                        const stockNum = p.stock ?? p.stock_quantity;
-                        return (
-                          <div key={pIdx} className="self-start">
-                            <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ width: '220px' }}>
-                              {imgSrc && (
-                                <img src={imgSrc} alt={p.name} loading="lazy"
-                                  className="w-full object-cover cursor-pointer"
-                                  style={{ height: '150px' }}
-                                  onClick={() => setLightboxImage(imgSrc)} />
-                              )}
-                              <div className="px-3 py-2">
-                                <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
-                                {p.description && (
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.description}</p>
-                                )}
-                                <p className="text-xs mt-1" style={{ color: hasPrice ? '#25D366' : '#8696a0' }}>
-                                  {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar cotizacion'}
-                                </p>
-                                {stockNum > 0 && stockNum < 900 && (
-                                  <p className="text-xs text-gray-400">Stock: {stockNum}</p>
-                                )}
-                                <p className="text-right" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
-                              </div>
-                            </div>
+                  {/* ── Product photo bubbles (stacked vertically) ── */}
+                  {msg.type === 'products' && msg.products?.length > 0 && msg.products.slice(0, 3).map((p, pIdx) => {
+                    const imgSrc = p.image_url || p.image_urls?.[0];
+                    const hasPrice = p.price && Number(p.price) > 0;
+                    return (
+                      <div key={`prod-${pIdx}`} style={{ display: 'block', marginBottom: '4px' }}>
+                        <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ display: 'block', width: '220px' }}>
+                          {imgSrc && (
+                            <img src={imgSrc} alt={p.name} loading="lazy"
+                              onClick={() => setLightboxImage(imgSrc)}
+                              style={{ display: 'block', width: '220px', height: '150px', objectFit: 'cover', cursor: 'pointer' }} />
+                          )}
+                          <div style={{ padding: '8px 12px' }}>
+                            <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
+                            {p.description && (
+                              <p className="text-xs text-gray-500 line-clamp-2" style={{ marginTop: '2px' }}>{p.description}</p>
+                            )}
+                            <p className="text-xs" style={{ marginTop: '4px', color: hasPrice ? '#25D366' : '#8696a0' }}>
+                              {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar cotizacion'}
+                            </p>
+                            <p style={{ textAlign: 'right', fontSize: '11px', color: '#8696a0', marginTop: '4px' }}>{fmtTime(msg.timestamp)}</p>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        </div>
+                      </div>
+                    );
+                  })}
 
                   {/* ── Appointment card ── */}
                   {msg.type === 'appointment' && msg.appointment && (
