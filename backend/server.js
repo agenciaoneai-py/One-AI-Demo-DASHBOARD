@@ -70,6 +70,7 @@ app.post('/webhook/demo-message', async (req, res) => {
       products: result.products || [],
       appointment: result.appointment || null,
       order: result.order || null,
+      referral: result.referral || null,
     });
   } catch (error) {
     console.error('❌ Webhook error:', error);

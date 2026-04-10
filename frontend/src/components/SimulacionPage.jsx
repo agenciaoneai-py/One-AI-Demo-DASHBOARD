@@ -241,6 +241,10 @@ function SimulacionPage({ config }) {
           setUsedCapabilities(prev => new Set(prev).add('order'));
           setMessages(prev => [...prev, { type: 'order', order: data.order, timestamp: new Date() }]);
         }
+        if (data.referral) {
+          setUsedCapabilities(prev => new Set(prev).add('handoff'));
+          setMessages(prev => [...prev, { type: 'referral', referral: data.referral, timestamp: new Date() }]);
+        }
         // Detect delivery/handoff from text
         const respLower = (data.response || '').toLowerCase();
         if (respLower.includes('delivery') || respLower.includes('envío') || respLower.includes('zona'))
@@ -503,6 +507,43 @@ function SimulacionPage({ config }) {
                           </p>
                         </div>
                         <p className="text-right px-3 pb-1.5" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Referral card ── */}
+                  {msg.type === 'referral' && msg.referral && (
+                    <div className="flex justify-start mb-1">
+                      <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ maxWidth: '280px' }}>
+                        <div className="flex items-center gap-3 p-3">
+                          <img
+                            src={msg.referral.photo_url}
+                            alt={msg.referral.name}
+                            loading="lazy"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-900 text-sm truncate">{msg.referral.name}</p>
+                            <p className="text-xs text-gray-500 truncate">{msg.referral.role}</p>
+                          </div>
+                        </div>
+                        <div className="border-t border-gray-100 px-3 py-2 space-y-1">
+                          <p className="text-xs text-gray-600">
+                            <i className="fas fa-phone text-green-500 mr-2" />{msg.referral.phone}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            <i className="fas fa-envelope text-blue-500 mr-2" />{msg.referral.email}
+                          </p>
+                        </div>
+                        <a
+                          href={msg.referral.whatsapp_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full py-2.5 text-white text-sm font-medium"
+                          style={{ backgroundColor: '#25D366' }}
+                        >
+                          <i className="fab fa-whatsapp" />Escribir por WhatsApp
+                        </a>
                       </div>
                     </div>
                   )}

@@ -423,7 +423,19 @@ Industrias: alimenticia, farmaceutica, agroindustria, financiera, gobierno, text
 
 # REGLA ESPECIAL B2B
 
-NUNCA des precios. Todo se cotiza segun volumen, material y especificaciones. Decile al cliente que un asesor le pasa cotizacion personalizada o que podes agendarle reunion con el equipo comercial.`,
+NUNCA des precios. Todo se cotiza segun volumen, material y especificaciones. Decile al cliente que un asesor le pasa cotizacion personalizada o que podes agendarle reunion con el equipo comercial.
+
+# DERIVACION A VENDEDORES
+
+Cuando el cliente ya esta listo para avanzar (quiere cotizacion, reunion, o mas detalles tecnicos), usa la herramienta refer_to_salesperson para derivarlo al vendedor del area correcta. NO derives antes de tiempo — primero vende, mostra productos, responde dudas.
+
+Areas y vendedores:
+- etiquetas (adhesivas, termocontraibles, book label, refrigerados, wrap around, digitales) -> Victor Barreto
+- seguridad (hologramas, cintas void, placas de control, papel de seguridad, precintos, cheques) -> Fabricio Talavera
+- packaging (packaging, papeleria corporativa, hang tag, ennoblecimientos) -> Alma Aveiro
+- tecnologia (factura electronica, multa electronica, lector de huellas, iris, DNA, pasaportes, camaras, credenciales) -> Alejandro Sanchez
+
+Usa refer_to_salesperson con el area correcta. Si no estas segura del area, preguntale al cliente que necesita antes de derivar.`,
     }),
     products: [
       { name: 'Etiquetas Adhesivas', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas autoadhesivas de alta calidad para todo tipo de envases. Alta adherencia, resistentes a frio, calor y fricciones.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/626954867d9517edd360ca27_Portada%20de%20ETIQUETAS.jpg' },

@@ -129,6 +129,25 @@ const DEMO_TOOLS = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'refer_to_salesperson',
+      description: 'Derivar al cliente con un vendedor específico del área comercial correspondiente. Usar cuando el cliente está listo para cotización, reunión o necesita atención especializada.',
+      parameters: {
+        type: 'object',
+        properties: {
+          area: {
+            type: 'string',
+            enum: ['etiquetas', 'seguridad', 'packaging', 'tecnologia'],
+            description: 'Área comercial del vendedor',
+          },
+          reason: { type: 'string', description: 'Motivo breve de la derivación' },
+        },
+        required: ['area', 'reason'],
+      },
+    },
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -194,6 +213,9 @@ async function buildSystemPrompt(clientId) {
   // 7. Current date/time (Asunción TZ)
   const now = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion' });
   prompt += `\n\n## Fecha y hora actual\n${now} (Asunción, Paraguay)`;
+
+  // 8. Photo rule — always search before mentioning a product
+  prompt += `\n\n# REGLA DE FOTOS — MAXIMA PRIORIDAD\nSiempre que menciones un producto o solucion, PRIMERO usa la herramienta search_product para buscarlo. NUNCA hables de un producto sin buscarlo primero. El cliente DEBE ver la foto del producto. Si el cliente pregunta por etiquetas, busca "etiquetas". Si pregunta por packaging, busca "packaging". SIEMPRE busca primero, habla despues.`;
 
   return prompt;
 }
@@ -451,13 +473,55 @@ async function executeTool(toolName, args, clientId) {
     }
 
     case 'request_human_handoff': {
-      // For the demo we just acknowledge — no real handoff queue
       return {
         success: true,
         message: 'Conversación transferida a un agente humano.',
         reason: args.reason,
         summary: args.summary,
       };
+    }
+
+    case 'refer_to_salesperson': {
+      const salespeople = {
+        etiquetas: {
+          name: 'Victor Barreto',
+          role: 'Asesor Comercial — Etiquetas',
+          phone: '+595 991 707 313',
+          email: 'vbarreto@zamphiropolos.com',
+          whatsapp_url: 'https://wa.link/i1oi7j',
+          photo_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/69c52a761caa28764c7566da_6819ff5d71cb8e13d4387d36_Victor%2520Barreto.png',
+        },
+        seguridad: {
+          name: 'Fabricio Talavera',
+          role: 'Asesor Comercial — Seguridad',
+          phone: '+595 991 206 745',
+          email: 'ftalavera@zamphiropolos.com',
+          whatsapp_url: 'http://wa.link/0efhao',
+          photo_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/69c52a74f6f75e5ea40306f3_681a08b88d22fbcbb15005c2_FAbricio%2520Talavera.png',
+        },
+        packaging: {
+          name: 'Alma Aveiro',
+          role: 'Asesora Comercial — Packaging e Impresos',
+          phone: '+595 983 413 614',
+          email: 'aaveiro@zamphiropolos.com',
+          whatsapp_url: 'http://wa.link/t88l7a',
+          photo_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/69c52a74d638dbadcb43bd92_681a0418b06c629a2aa72532_Alma%2520Aveiro.png',
+        },
+        tecnologia: {
+          name: 'Alejandro Sánchez',
+          role: 'Asesor Comercial — Tecnología',
+          phone: '+595 984 984 926',
+          email: 'asanchez@zamphiropolos.com',
+          whatsapp_url: 'http://wa.link/kgq615',
+          photo_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/69c52a75b546c0b47ca893f3_6819ffbf993a1aa84fb44bd0_Alejandro%2520Sanchez.png',
+        },
+      };
+
+      const person = salespeople[args.area];
+      if (!person) {
+        return { success: false, message: 'Área no encontrada. Áreas válidas: etiquetas, seguridad, packaging, tecnologia.' };
+      }
+      return { success: true, referral: person, reason: args.reason };
     }
 
     default:
@@ -533,6 +597,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
     let productsToShow = [];
     let appointmentCreated = null;
     let orderCreated = null;
+    let referralData = null;
 
     // 7. Execute tool calls if present
     if (firstMessage.tool_calls && firstMessage.tool_calls.length > 0) {
@@ -555,6 +620,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
         }
         if (result.appointment) appointmentCreated = result.appointment;
         if (result.order) orderCreated = result.order;
+        if (result.referral) referralData = result.referral;
 
         messages.push({
           role: 'tool',
@@ -606,6 +672,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
       products: productsToShow,
       appointment: appointmentCreated,
       order: orderCreated,
+      referral: referralData,
     };
 
   } catch (error) {
@@ -615,6 +682,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
       products: [],
       appointment: null,
       order: null,
+      referral: null,
     };
   }
 }
