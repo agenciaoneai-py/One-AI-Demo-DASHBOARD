@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 const DEMO_USER_ID = 'demo_simulator_001';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -17,8 +16,21 @@ function getExampleMessage(business = '') {
   return 'me interesa conocer sus productos';
 }
 
-// Resize an uploaded image client-side and return a base64 data URL.
-// Keeps payloads under control for the OpenAI vision API.
+function getSuggestionChips(business = '') {
+  const b = business.toLowerCase();
+  if (b.includes('joyer') || b.includes('silver') || b.includes('perla'))
+    return ['¿Qué joyas tienen?', 'Busco un regalo', '¿Hacen delivery?', 'Agendar visita'];
+  if (b.includes('restaurant') || b.includes('parrilla') || b.includes('pizza') || b.includes('comida'))
+    return ['Ver el menú', 'Quiero hacer un pedido', '¿Hacen delivery?', '¿Tienen combos?'];
+  if (b.includes('clínic') || b.includes('clinic') || b.includes('médic') || b.includes('salud'))
+    return ['Agendar una cita', '¿Qué especialidades tienen?', 'Ver precios', '¿Aceptan obra social?'];
+  if (b.includes('ropa') || b.includes('urban') || b.includes('moda') || b.includes('style'))
+    return ['¿Qué ropa tienen?', 'Quiero hacer un pedido', '¿Hacen delivery?', '¿Tienen talles grandes?'];
+  if (b.includes('inmobil') || b.includes('propiedad'))
+    return ['Busco un departamento', 'Quiero alquilar', 'Agendar una visita', '¿Qué zonas tienen?'];
+  return ['¿Qué productos tienen?', 'Quiero hacer un pedido', '¿Hacen delivery?', 'Agendar una cita'];
+}
+
 async function resizeImageToBase64(file, maxDim = 1024) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -31,8 +43,7 @@ async function resizeImageToBase64(file, maxDim = 1024) {
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = reject;
@@ -43,29 +54,39 @@ async function resizeImageToBase64(file, maxDim = 1024) {
   });
 }
 
-function formatGsAmount(n) {
+function formatGs(n) {
   return Math.round(Number(n) || 0).toLocaleString('es-PY', { maximumFractionDigits: 0 });
 }
 
-function formatAppointmentDate(dateStr) {
+function formatApptDate(dateStr) {
   if (!dateStr) return '';
   try {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-PY', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', day: 'numeric', month: 'long',
     });
-  } catch {
-    return dateStr;
-  }
+  } catch { return dateStr; }
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+function fmtTime(d) {
+  return d.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function useNow() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
 
 function Toast({ message, type = 'success', onDone }) {
   useEffect(() => {
     const t = setTimeout(onDone, 3500);
     return () => clearTimeout(t);
   }, [onDone]);
-
   return (
     <div className="fixed bottom-6 right-6 z-[60] animate-fade-in-up">
       <div className={`px-4 py-3 rounded-xl shadow-xl text-sm flex items-center gap-2 ${
@@ -78,13 +99,13 @@ function Toast({ message, type = 'success', onDone }) {
   );
 }
 
-// ─── PromptEditorModal ────────────────────────────────────────────────────────
+// ─── PromptEditorModal (unchanged) ───────────────────────────────────────────
 
 function PromptEditorModal({ onClose, onSaved }) {
-  const [prompt,       setPrompt]       = useState('');
-  const [loading,      setLoading]      = useState(true);
-  const [saving,       setSaving]       = useState(false);
-  const [fetchError,   setFetchError]   = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/api/demo/prompt`)
@@ -99,24 +120,14 @@ function PromptEditorModal({ onClose, onSaved }) {
     setSaving(true);
     try {
       const res = await fetch(`${API_URL}/api/demo/prompt`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: prompt.trim() }),
       });
       const data = await res.json();
-      if (data.success) {
-        onSaved();
-        onClose();
-      } else {
-        onSaved('error');
-        onClose();
-      }
-    } catch {
-      onSaved('error');
+      onSaved(data.success ? undefined : 'error');
       onClose();
-    } finally {
-      setSaving(false);
-    }
+    } catch { onSaved('error'); onClose(); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -125,53 +136,25 @@ function PromptEditorModal({ onClose, onSaved }) {
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl bg-white rounded-xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Editar Prompt del Agente</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
-            <i className="fas fa-xmark text-xl" />
-          </button>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><i className="fas fa-xmark text-xl" /></button>
         </div>
-
-        <p className="text-sm text-gray-500 mb-4">
-          Este es el prompt del sistema que define cómo responde tu agente de IA. Los cambios se aplican a partir del próximo mensaje.
-        </p>
-
+        <p className="text-sm text-gray-500 mb-4">Este es el prompt del sistema que define cómo responde tu agente de IA. Los cambios se aplican a partir del próximo mensaje.</p>
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          </div>
+          <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /></div>
         ) : fetchError ? (
-          <div className="py-8 text-center text-sm text-red-500">
-            <i className="fas fa-exclamation-circle mr-2" />
-            No se pudo cargar el prompt. Intentá de nuevo.
-          </div>
+          <div className="py-8 text-center text-sm text-red-500"><i className="fas fa-exclamation-circle mr-2" />No se pudo cargar el prompt.</div>
         ) : (
-          <textarea
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            rows={16}
+          <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={16}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
-            placeholder="Sos un asistente de ventas para..."
-            autoFocus
-          />
+            placeholder="Sos un asistente de ventas para..." autoFocus />
         )}
-
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-gray-400">{prompt.length} caracteres</p>
           <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || loading || !prompt.trim()}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2 transition-colors"
-            >
-              {saving
-                ? <><i className="fas fa-spinner fa-spin" /> Guardando...</>
-                : <><i className="fas fa-save" /> Guardar Prompt</>
-              }
+            <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium">Cancelar</button>
+            <button onClick={handleSave} disabled={saving || loading || !prompt.trim()}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2">
+              {saving ? <><i className="fas fa-spinner fa-spin" /> Guardando...</> : <><i className="fas fa-save" /> Guardar Prompt</>}
             </button>
           </div>
         </div>
@@ -180,38 +163,64 @@ function PromptEditorModal({ onClose, onSaved }) {
   );
 }
 
-// ─── SimulacionPage ───────────────────────────────────────────────────────────
+// ─── Capabilities tracker ────────────────────────────────────────────────────
+
+const CAPABILITIES = [
+  { key: 'search',      label: 'Buscar productos',     icon: 'fas fa-search' },
+  { key: 'appointment', label: 'Agendar citas',         icon: 'fas fa-calendar-check' },
+  { key: 'order',       label: 'Tomar pedidos',         icon: 'fas fa-bag-shopping' },
+  { key: 'delivery',    label: 'Calcular delivery',     icon: 'fas fa-truck' },
+  { key: 'vision',      label: 'Analizar imágenes',     icon: 'fas fa-image' },
+  { key: 'handoff',     label: 'Derivar a humano',      icon: 'fas fa-headset' },
+];
+
+// ─── SimulacionPage ──────────────────────────────────────────────────────────
 
 function SimulacionPage({ config }) {
-  const [messages,         setMessages]         = useState([]);
-  const [inputMessage,     setInputMessage]      = useState('');
-  const [isTyping,         setIsTyping]          = useState(false);
-  const [promptEditorOpen, setPromptEditorOpen]  = useState(false);
-  const [lightboxImage,    setLightboxImage]     = useState(null);
-  const [toast,            setToast]             = useState(null);
-  const [pendingImage,     setPendingImage]      = useState(null);  // base64 data URL
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [promptEditorOpen, setPromptEditorOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [pendingImage, setPendingImage] = useState(null);
+  const [usedCapabilities, setUsedCapabilities] = useState(new Set());
+  const [chipsVisible, setChipsVisible] = useState(true);
+
   const messagesEndRef = useRef(null);
-  const fileInputRef   = useRef(null);
+  const fileInputRef = useRef(null);
+  const now = useNow();
 
-  // Derive display values from config
-  const agentName    = config?.ownerName    || 'Agente IA';
+  const agentName = config?.ownerName || 'Agente IA';
   const businessName = config?.businessName || 'Tu Negocio';
-  const agentRole    = config?.industryConfig?.agentRole || 'Asistente de ventas';
-  const logoUrl      = config?.logoUrl      || null;
-  const avatarInitial = agentName.charAt(0).toUpperCase();
+  const logoUrl = config?.logoUrl || null;
+  const avatarInitial = (agentName || 'A').charAt(0).toUpperCase();
+  const features = config?.features || {};
 
-  // Auto-scroll to latest message
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() && !pendingImage) return;
+  // Welcome message on mount
+  useEffect(() => {
+    setMessages([{
+      type: 'agent',
+      text: `Hola! Bienvenido/a a ${businessName}. Soy ${agentName}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`,
+      timestamp: new Date(),
+    }]);
+  }, []);
 
-    const text = inputMessage;
+  const sendMessage = async (overrideText) => {
+    const text = overrideText || inputMessage;
+    if (!text.trim() && !pendingImage) return;
+
     const imageUrl = pendingImage;
     setInputMessage('');
     setPendingImage(null);
+    setChipsVisible(false);
+
+    if (imageUrl) setUsedCapabilities(prev => new Set(prev).add('vision'));
 
     setMessages(prev => [...prev, { type: 'user', text, imageUrl, timestamp: new Date() }]);
     setIsTyping(true);
@@ -220,31 +229,35 @@ function SimulacionPage({ config }) {
       const res = await fetch(`${API_URL}/webhook/demo-message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: DEMO_USER_ID,
-          message: text,
-          platform: 'demo',
-          imageUrl: imageUrl || null,
-        }),
+        body: JSON.stringify({ userId: DEMO_USER_ID, message: text, platform: 'demo', imageUrl: imageUrl || null }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setMessages(prev => [...prev, { type: 'agent', text: data.response, timestamp: new Date() }]);
+
         if (data.products?.length > 0) {
+          setUsedCapabilities(prev => new Set(prev).add('search'));
           setMessages(prev => [...prev, { type: 'products', products: data.products, timestamp: new Date() }]);
         }
         if (data.appointment) {
+          setUsedCapabilities(prev => new Set(prev).add('appointment'));
           setMessages(prev => [...prev, { type: 'appointment', appointment: data.appointment, timestamp: new Date() }]);
         }
         if (data.order) {
+          setUsedCapabilities(prev => new Set(prev).add('order'));
           setMessages(prev => [...prev, { type: 'order', order: data.order, timestamp: new Date() }]);
         }
+        // Detect delivery/handoff from text
+        const respLower = (data.response || '').toLowerCase();
+        if (respLower.includes('delivery') || respLower.includes('envío') || respLower.includes('zona'))
+          setUsedCapabilities(prev => new Set(prev).add('delivery'));
+        if (respLower.includes('transferir') || respLower.includes('agente humano'))
+          setUsedCapabilities(prev => new Set(prev).add('handoff'));
       } else {
         setToast({ type: 'error', message: 'Error al enviar mensaje' });
       }
-    } catch (err) {
-      console.error('Error:', err);
+    } catch {
       setToast({ type: 'error', message: 'Error de conexión' });
     } finally {
       setIsTyping(false);
@@ -254,338 +267,337 @@ function SimulacionPage({ config }) {
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setToast({ type: 'error', message: 'Solo se permiten imágenes' });
-      return;
-    }
-    try {
-      const dataUrl = await resizeImageToBase64(file, 1024);
-      setPendingImage(dataUrl);
-    } catch (err) {
-      console.error('Error procesando imagen:', err);
-      setToast({ type: 'error', message: 'Error procesando la imagen' });
-    } finally {
-      // Clear so re-uploading the same file fires onChange
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    if (!file.type.startsWith('image/')) { setToast({ type: 'error', message: 'Solo se permiten imágenes' }); return; }
+    try { setPendingImage(await resizeImageToBase64(file, 1024)); }
+    catch { setToast({ type: 'error', message: 'Error procesando la imagen' }); }
+    finally { if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
   const handlePromptSaved = (result) => {
-    if (result === 'error') {
-      setToast({ type: 'error', message: 'Error guardando el prompt' });
-    } else {
-      setToast({ type: 'success', message: 'Prompt actualizado. Se aplica desde el próximo mensaje.' });
-    }
+    setToast(result === 'error'
+      ? { type: 'error', message: 'Error guardando el prompt' }
+      : { type: 'success', message: 'Prompt actualizado. Aplica desde el próximo mensaje.' });
   };
 
+  const clearChat = () => {
+    setMessages([{
+      type: 'agent',
+      text: `Hola! Bienvenido/a a ${businessName}. Soy ${agentName}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`,
+      timestamp: new Date(),
+    }]);
+    setUsedCapabilities(new Set());
+    setChipsVisible(true);
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="flex h-full bg-gray-50">
-      {/* Chat */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto bg-white shadow-xl">
+    <div className="flex h-full bg-gray-50 overflow-hidden">
 
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {logoUrl ? (
-                <img src={logoUrl} alt={businessName} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <span className="text-white font-bold text-sm">{avatarInitial}</span>
-              )}
-            </div>
-            <div>
-              <p className="font-bold text-white">{agentName} – {businessName}</p>
-              <p className="text-xs text-green-100">{agentRole} • En línea</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setPromptEditorOpen(true)}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-semibold transition flex items-center gap-2"
-          >
-            <i className="fas fa-cog" />
-            Editar Prompt
-          </button>
-        </div>
+      {/* ══ LEFT PANEL (desktop only) ═══════════════════════════════════════ */}
+      <div className="hidden md:flex flex-col justify-center flex-shrink-0 px-10 lg:px-16" style={{ width: '40%' }}>
+        <div className="max-w-md">
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 leading-tight mb-4">
+            Así ven tus clientes al empleado virtual
+          </h1>
+          <p className="text-gray-500 text-base lg:text-lg mb-8 leading-relaxed">
+            Probá en tiempo real cómo <span className="font-semibold text-gray-700">{agentName}</span> atiende a los clientes de <span className="font-semibold text-gray-700">{businessName}</span>
+          </p>
 
-        {/* Info banner */}
-        <div className="bg-yellow-50 border-b border-yellow-200 p-4">
-          <div className="flex items-start gap-3">
-            <i className="fas fa-info-circle text-yellow-600 mt-1 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-yellow-900 mb-1">💬 Simulador de Conversación</p>
-              <p className="text-xs text-yellow-700">
-                Así se verá {agentName} respondiendo en WhatsApp/Instagram de {businessName}.
-                Probá consultando por productos, precios o delivery.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#e5ddd5]">
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-comments text-green-600 text-3xl" />
-              </div>
-              <p className="text-gray-600 font-semibold mb-2">Iniciá la conversación</p>
-              <p className="text-sm text-gray-500">
-                Ejemplo: "{getExampleMessage(businessName)}"
-              </p>
-            </div>
-          )}
-
-          {messages.map((msg, idx) => (
-            <div key={idx}>
-              {msg.type === 'user' && (
-                <div className="flex justify-end">
-                  <div className="max-w-md">
-                    <div className="bg-[#dcf8c6] px-3 py-2 rounded-lg shadow">
-                      {msg.imageUrl && (
-                        <img
-                          src={msg.imageUrl}
-                          alt="Imagen enviada"
-                          className="rounded mb-2 max-w-full max-h-64 object-contain cursor-pointer hover:opacity-90 transition"
-                          onClick={() => setLightboxImage(msg.imageUrl)}
-                        />
-                      )}
-                      {msg.text && <p className="text-sm text-gray-900">{msg.text}</p>}
-                      <p className="text-xs text-gray-500 text-right mt-1">
-                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {msg.type === 'agent' && (
-                <div className="flex justify-start">
-                  <div className="max-w-md">
-                    <div className="bg-white px-4 py-2 rounded-lg shadow">
-                      <p className="text-sm text-gray-900 whitespace-pre-line">{msg.text}</p>
-                      <p className="text-xs text-gray-500 text-right mt-1">
-                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {msg.type === 'products' && msg.products?.length > 0 && (
-                <div className="flex justify-start">
-                  <div className="max-w-lg">
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                      {msg.products.map((product, pIdx) => {
-                        const imgSrc = product.image_url || product.image_urls?.[0];
-                        const currency = product.currency === 'USD' ? 'USD' : 'Gs';
-                        const stockNum = product.stock ?? product.stock_quantity;
-                        return (
-                          <div key={pIdx} className="border-b last:border-b-0 p-3 hover:bg-gray-50">
-                            <div className="flex gap-3">
-                              {imgSrc && (
-                                <img
-                                  src={imgSrc}
-                                  alt={product.name}
-                                  className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 transition flex-shrink-0"
-                                  onClick={() => setLightboxImage(imgSrc)}
-                                  title="Click para ver en tamaño completo"
-                                />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
-                                {product.description && (
-                                  <p className="text-xs text-gray-500 mb-1 line-clamp-2">{product.description}</p>
-                                )}
-                                <p className="text-lg font-bold text-green-600">
-                                  {formatGsAmount(product.price)} {currency}
-                                </p>
-                                {stockNum > 0 && (
-                                  <p className="text-xs text-gray-500">Stock: {stockNum}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <p className="text-xs text-gray-400 text-right p-2">
-                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {msg.type === 'appointment' && msg.appointment && (
-                <div className="flex justify-start">
-                  <div className="max-w-md w-full">
-                    <div className="bg-white rounded-lg shadow border-l-4 border-emerald-500 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <i className="fas fa-circle-check text-emerald-500 text-lg" />
-                        <p className="text-sm font-bold text-emerald-700">Cita agendada</p>
-                      </div>
-                      <div className="space-y-1.5 text-sm text-gray-700">
-                        <p><i className="fas fa-user text-gray-400 w-5" /> {msg.appointment.customer_name}</p>
-                        <p><i className="fas fa-clipboard-list text-gray-400 w-5" /> {msg.appointment.service}</p>
-                        <p><i className="fas fa-calendar text-gray-400 w-5" /> {formatAppointmentDate(msg.appointment.date)}</p>
-                        <p><i className="fas fa-clock text-gray-400 w-5" /> {msg.appointment.time}</p>
-                        {msg.appointment.customer_phone && (
-                          <p><i className="fas fa-phone text-gray-400 w-5" /> {msg.appointment.customer_phone}</p>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-400 text-right mt-2">
-                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {msg.type === 'order' && msg.order && (
-                <div className="flex justify-start">
-                  <div className="max-w-md w-full">
-                    <div className="bg-white rounded-lg shadow border-l-4 border-indigo-500 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <i className="fas fa-bag-shopping text-indigo-500 text-lg" />
-                        <p className="text-sm font-bold text-indigo-700">Pedido creado</p>
-                      </div>
-                      <div className="space-y-2 text-sm text-gray-700">
-                        <p><i className="fas fa-user text-gray-400 w-5" /> {msg.order.customer_name}</p>
-                        <div className="bg-gray-50 rounded p-2 space-y-1">
-                          {(msg.order.items || []).map((item, iIdx) => (
-                            <div key={iIdx} className="flex justify-between text-xs">
-                              <span className="text-gray-700">
-                                {item.quantity}× {item.product_name}
-                              </span>
-                              <span className="text-gray-500">
-                                {formatGsAmount(item.quantity * item.unit_price)} Gs
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between pt-1 border-t">
-                          <span className="text-xs font-semibold text-gray-600">TOTAL</span>
-                          <span className="font-bold text-indigo-700">
-                            {formatGsAmount(msg.order.total)} Gs
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          <i className={`fas ${msg.order.delivery_type === 'delivery' ? 'fa-truck' : 'fa-store'} mr-1.5`} />
-                          {msg.order.delivery_type === 'delivery' ? 'Delivery' : 'Retiro en local'}
-                          {msg.order.delivery_address && ` — ${msg.order.delivery_address}`}
-                        </p>
-                      </div>
-                      <p className="text-xs text-gray-400 text-right mt-2">
-                        {msg.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-white px-4 py-3 rounded-lg shadow">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="bg-gray-100 p-4 border-t border-gray-200">
-          {/* Image preview */}
-          {pendingImage && (
-            <div className="mb-3 flex items-center gap-3 bg-white rounded-lg p-2 border border-gray-200">
-              <img src={pendingImage} alt="Preview" className="w-14 h-14 object-cover rounded" />
-              <div className="flex-1 text-sm text-gray-600">
-                <p className="font-medium">Imagen lista para enviar</p>
-                <p className="text-xs text-gray-400">Escribí un mensaje opcional</p>
-              </div>
-              <button
-                onClick={() => setPendingImage(null)}
-                className="text-gray-400 hover:text-red-500 p-2"
-                title="Quitar imagen"
-              >
-                <i className="fas fa-xmark" />
-              </button>
-            </div>
-          )}
-
-          <div className="flex gap-3 items-center">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isTyping}
-              title="Adjuntar imagen"
-              className="w-12 h-12 flex items-center justify-center bg-white border border-gray-300 rounded-full text-gray-500 hover:text-green-600 hover:bg-green-50 transition disabled:opacity-50"
-            >
-              <i className="fas fa-paperclip text-lg" />
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-3 mb-10">
+            <button onClick={() => setPromptEditorOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+              <i className="fas fa-wand-magic-sparkles" /> Editar Prompt
             </button>
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={e => setInputMessage(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              placeholder={`Escribile a ${agentName}...`}
-              className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
-              autoFocus
-            />
-            <button
-              onClick={sendMessage}
-              disabled={(!inputMessage.trim() && !pendingImage) || isTyping}
-              className="px-6 py-3 bg-green-600 text-white rounded-full font-semibold hover:bg-green-700 transition disabled:opacity-50"
-            >
-              <i className="fas fa-paper-plane" />
+            <button onClick={clearChat}
+              className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors">
+              <i className="fas fa-arrows-rotate" /> Limpiar chat
             </button>
+          </div>
+
+          {/* Capabilities tracker */}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Capacidades del agente</p>
+            <div className="space-y-2">
+              {CAPABILITIES.map(cap => {
+                const active = usedCapabilities.has(cap.key);
+                return (
+                  <div key={cap.key} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-500 ${
+                    active ? 'bg-emerald-50' : 'bg-gray-50'
+                  }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all duration-500 ${
+                      active ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-400'
+                    }`}>
+                      <i className={active ? 'fas fa-check' : cap.icon} />
+                    </div>
+                    <span className={`text-sm transition-colors duration-500 ${active ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                      {cap.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Prompt editor */}
+      {/* ══ RIGHT PANEL — IPHONE ══════════════════════════════════════════ */}
+      <div className="flex-1 flex items-center justify-center p-4 md:pr-10 lg:pr-16">
+        <div className="relative w-full max-w-[390px]" style={{ height: 'min(85vh, 780px)' }}>
+
+          {/* iPhone outer frame */}
+          <div className="absolute inset-0 rounded-[44px] bg-gray-800 shadow-2xl"
+            style={{ boxShadow: '0 25px 60px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 0 0 2px #1f2937' }} />
+
+          {/* iPhone screen */}
+          <div className="absolute inset-[3px] rounded-[42px] overflow-hidden flex flex-col bg-white">
+
+            {/* Status bar */}
+            <div className="relative flex items-center justify-between px-7 pt-3 pb-1 bg-[#075E54]" style={{ minHeight: '48px' }}>
+              {/* Dynamic Island */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full" />
+              {/* Time */}
+              <span className="text-white text-xs font-semibold" style={{ fontSize: '13px' }}>
+                {fmtTime(now)}
+              </span>
+              {/* Right icons */}
+              <div className="flex items-center gap-1">
+                <i className="fas fa-signal text-white" style={{ fontSize: '11px' }} />
+                <i className="fas fa-wifi text-white" style={{ fontSize: '11px' }} />
+                <i className="fas fa-battery-full text-white" style={{ fontSize: '13px' }} />
+              </div>
+            </div>
+
+            {/* WhatsApp header */}
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-[#075E54]">
+              <i className="fas fa-arrow-left text-white" style={{ fontSize: '16px' }} />
+              {/* Avatar */}
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {logoUrl
+                  ? <img src={logoUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  : <span className="text-white font-bold text-sm">{avatarInitial}</span>
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold text-sm truncate">{businessName}</p>
+                <p className="text-emerald-200 text-xs">en linea</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <i className="fas fa-video text-white" style={{ fontSize: '15px' }} />
+                <i className="fas fa-phone text-white" style={{ fontSize: '14px' }} />
+                <i className="fas fa-ellipsis-vertical text-white" style={{ fontSize: '14px' }} />
+              </div>
+            </div>
+
+            {/* Chat area */}
+            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2" style={{ backgroundColor: '#ECE5DD' }}>
+
+              {/* Messages */}
+              {messages.map((msg, idx) => (
+                <div key={idx}>
+                  {/* ── Agent bubble ── */}
+                  {msg.type === 'agent' && (
+                    <div className="flex justify-start mb-1">
+                      <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none px-3 py-2 shadow-sm" style={{ borderColor: '#e2dbd3' }}>
+                        <p className="text-sm text-gray-900 whitespace-pre-line" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>{msg.text}</p>
+                        <p className="text-right mt-0.5" style={{ fontSize: '11px', color: '#8696a0' }}>
+                          {fmtTime(msg.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── User bubble ── */}
+                  {msg.type === 'user' && (
+                    <div className="flex justify-end mb-1">
+                      <div className="max-w-[85%] bg-[#D9FDD3] rounded-lg rounded-tr-none px-3 py-2 shadow-sm">
+                        {msg.imageUrl && (
+                          <img src={msg.imageUrl} alt="" loading="lazy"
+                            className="rounded mb-1.5 max-w-full max-h-48 object-contain cursor-pointer"
+                            onClick={() => setLightboxImage(msg.imageUrl)} />
+                        )}
+                        {msg.text && <p className="text-sm text-gray-900" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>{msg.text}</p>}
+                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                          <span style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</span>
+                          {/* Double check */}
+                          <svg width="18" height="11" viewBox="0 0 18 11" fill="none" style={{ marginBottom: '-1px' }}>
+                            <path d="M6.5 9L2 4.5l.7-.7L6.5 7.6 12.3 1.8l.7.7L6.5 9z" fill="#53bdeb"/>
+                            <path d="M11.5 9L7 4.5l.7-.7 3.8 3.8L17.3 1.8l.7.7L11.5 9z" fill="#53bdeb"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Products carousel ── */}
+                  {msg.type === 'products' && msg.products?.length > 0 && (
+                    <div className="flex justify-start mb-1">
+                      <div className="max-w-[90%]">
+                        <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+                          {msg.products.map((p, pIdx) => {
+                            const imgSrc = p.image_url || p.image_urls?.[0];
+                            return (
+                              <div key={pIdx} className="bg-white rounded-lg shadow-sm flex-shrink-0 overflow-hidden snap-start" style={{ width: '200px' }}>
+                                {imgSrc && (
+                                  <img src={imgSrc} alt={p.name} loading="lazy"
+                                    className="w-full h-32 object-cover cursor-pointer"
+                                    onClick={() => setLightboxImage(imgSrc)} />
+                                )}
+                                <div className="p-2.5">
+                                  <p className="font-semibold text-gray-900 text-xs leading-tight mb-1 line-clamp-2">{p.name}</p>
+                                  {p.description && <p className="text-xs text-gray-500 mb-1 line-clamp-1">{p.description}</p>}
+                                  <p className="text-sm font-bold text-green-700">{formatGs(p.price)} {p.currency === 'USD' ? 'USD' : 'Gs'}</p>
+                                  {(p.stock ?? p.stock_quantity) > 0 && (
+                                    <p className="text-xs text-gray-400 mt-0.5">Stock: {p.stock ?? p.stock_quantity}</p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-right mt-0.5 pr-1" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Appointment card ── */}
+                  {msg.type === 'appointment' && msg.appointment && (
+                    <div className="flex justify-start mb-1">
+                      <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden">
+                        <div className="bg-emerald-500 px-3 py-1.5">
+                          <p className="text-white text-xs font-semibold flex items-center gap-1.5">
+                            <i className="fas fa-circle-check" /> Cita Agendada
+                          </p>
+                        </div>
+                        <div className="px-3 py-2 space-y-1">
+                          <p className="text-sm text-gray-800"><i className="fas fa-calendar text-gray-400 mr-2 w-4" style={{ fontSize: '12px' }} />{formatApptDate(msg.appointment.date)}</p>
+                          <p className="text-sm text-gray-800"><i className="fas fa-clock text-gray-400 mr-2 w-4" style={{ fontSize: '12px' }} />{msg.appointment.time}</p>
+                          <p className="text-sm text-gray-800"><i className="fas fa-user text-gray-400 mr-2 w-4" style={{ fontSize: '12px' }} />{msg.appointment.customer_name}</p>
+                          <p className="text-sm text-gray-800"><i className="fas fa-clipboard-list text-gray-400 mr-2 w-4" style={{ fontSize: '12px' }} />{msg.appointment.service}</p>
+                        </div>
+                        <p className="text-right px-3 pb-1.5" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Order card ── */}
+                  {msg.type === 'order' && msg.order && (
+                    <div className="flex justify-start mb-1">
+                      <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden">
+                        <div className="bg-indigo-500 px-3 py-1.5">
+                          <p className="text-white text-xs font-semibold flex items-center gap-1.5">
+                            <i className="fas fa-bag-shopping" /> Pedido Creado
+                          </p>
+                        </div>
+                        <div className="px-3 py-2 space-y-1.5">
+                          {(msg.order.items || []).map((item, iIdx) => (
+                            <div key={iIdx} className="flex justify-between text-xs text-gray-700">
+                              <span>{item.quantity}x {item.product_name}</span>
+                              <span className="text-gray-500">{formatGs(item.quantity * item.unit_price)} Gs</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between items-center pt-1.5 border-t border-gray-100">
+                            <span className="text-xs font-semibold text-gray-600">TOTAL</span>
+                            <span className="text-sm font-bold text-indigo-700">{formatGs(msg.order.total)} Gs</span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            <i className={`fas ${msg.order.delivery_type === 'delivery' ? 'fa-truck' : 'fa-store'} mr-1`} />
+                            {msg.order.delivery_type === 'delivery' ? 'Delivery' : 'Retiro'}
+                            {msg.order.delivery_address ? ` — ${msg.order.delivery_address}` : ''}
+                          </p>
+                        </div>
+                        <p className="text-right px-3 pb-1.5" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Suggestion chips */}
+              {chipsVisible && messages.length <= 1 && (
+                <div className="flex flex-wrap gap-1.5 px-1 pt-1">
+                  {getSuggestionChips(businessName).map((chip, i) => (
+                    <button key={i} onClick={() => sendMessage(chip)}
+                      className="px-3 py-1.5 bg-white rounded-full text-xs font-medium text-teal-700 shadow-sm border border-teal-200 hover:bg-teal-50 transition-colors">
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Typing indicator */}
+              {isTyping && (
+                <div className="flex justify-start mb-1">
+                  <div className="bg-white rounded-lg rounded-tl-none px-4 py-3 shadow-sm">
+                    <div className="flex gap-1 items-center">
+                      <span className="wa-typing-dot" style={{ animationDelay: '0ms' }} />
+                      <span className="wa-typing-dot" style={{ animationDelay: '200ms' }} />
+                      <span className="wa-typing-dot" style={{ animationDelay: '400ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Image preview bar */}
+            {pendingImage && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-t border-gray-200">
+                <img src={pendingImage} alt="Preview" className="w-10 h-10 object-cover rounded" />
+                <span className="text-xs text-gray-500 flex-1">Imagen lista</span>
+                <button onClick={() => setPendingImage(null)} className="text-gray-400 hover:text-red-500">
+                  <i className="fas fa-xmark" />
+                </button>
+              </div>
+            )}
+
+            {/* Input area */}
+            <div className="flex items-center gap-2 px-2 py-2" style={{ backgroundColor: '#F0F2F5' }}>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+              <button onClick={() => fileInputRef.current?.click()} disabled={isTyping}
+                className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-40">
+                <i className="fas fa-paperclip" style={{ fontSize: '18px' }} />
+              </button>
+              <div className="flex-1 flex items-center bg-white rounded-full px-4 py-2">
+                <input type="text" value={inputMessage}
+                  onChange={e => setInputMessage(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  placeholder="Mensaje"
+                  className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400"
+                  disabled={isTyping} />
+              </div>
+              <button onClick={() => sendMessage()} disabled={(!inputMessage.trim() && !pendingImage) || isTyping}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40"
+                style={{ backgroundColor: '#00A884' }}>
+                <i className="fas fa-paper-plane text-white" style={{ fontSize: '15px' }} />
+              </button>
+            </div>
+
+            {/* Home indicator */}
+            <div className="flex justify-center py-2 bg-white">
+              <div className="w-28 h-1 bg-gray-900 rounded-full" />
+            </div>
+
+          </div>
+          {/* End iPhone screen */}
+        </div>
+      </div>
+
+      {/* ══ MODALS ═══════════════════════════════════════════════════════ */}
+
       {promptEditorOpen && (
-        <PromptEditorModal
-          onClose={() => setPromptEditorOpen(false)}
-          onSaved={handlePromptSaved}
-        />
+        <PromptEditorModal onClose={() => setPromptEditorOpen(false)} onSaved={handlePromptSaved} />
       )}
 
-      {/* Image lightbox */}
       {lightboxImage && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={() => setLightboxImage(null)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 leading-none"
-            onClick={() => setLightboxImage(null)}
-          >
-            ×
-          </button>
-          <img
-            src={lightboxImage}
-            alt="Producto expandido"
-            className="max-w-full max-h-full object-contain rounded-lg"
-            onClick={e => e.stopPropagation()}
-          />
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setLightboxImage(null)}>
+          <button className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 leading-none" onClick={() => setLightboxImage(null)}>x</button>
+          <img src={lightboxImage} alt="" className="max-w-full max-h-full object-contain rounded-lg" onClick={e => e.stopPropagation()} />
         </div>
       )}
 
-      {/* Toast */}
       {toast && <Toast key={toast.message} {...toast} onDone={() => setToast(null)} />}
     </div>
   );

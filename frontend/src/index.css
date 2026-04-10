@@ -115,3 +115,20 @@ body {
 .animate-slide-in-right {
   animation: slideInRight 0.3s ease-out;
 }
+
+/* WhatsApp typing indicator dots */
+@keyframes waTypingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+.wa-typing-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #8696a0;
+  animation: waTypingBounce 1.4s ease-in-out infinite;
+}
+
+/* Hide scrollbar for product carousel inside iPhone */
+.snap-x::-webkit-scrollbar { display: none; }
