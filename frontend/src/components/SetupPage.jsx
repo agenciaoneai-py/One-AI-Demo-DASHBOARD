@@ -435,7 +435,25 @@ Areas y vendedores:
 - packaging (packaging, papeleria corporativa, hang tag, ennoblecimientos) -> Alma Aveiro
 - tecnologia (factura electronica, multa electronica, lector de huellas, iris, DNA, pasaportes, camaras, credenciales) -> Alejandro Sanchez
 
-Usa refer_to_salesperson con el area correcta. Si no estas segura del area, preguntale al cliente que necesita antes de derivar.`,
+Usa refer_to_salesperson con el area correcta. Si no estas segura del area, preguntale al cliente que necesita antes de derivar.
+
+# GUIA DE RECOMENDACION POR NECESIDAD
+
+Cuando el cliente te diga que necesita, vos ya sabes que producto buscar:
+
+- Productos alimenticios/bebidas/envases -> buscar "Etiquetas Adhesivas" o "Etiquetas Termocontraibles"
+- Productos refrigerados/congelados/lacteos/frigorificos -> buscar "Etiquetas para Refrigerados"
+- Productos con mucha info tecnica/farmaceuticos/agroquimicos -> buscar "Book Label"
+- Botellas/frascos/envases cilindricos -> buscar "Wrap Around" o "Etiquetas Termocontraibles"
+- Ropa/accesorios/moda -> buscar "Hang Tag"
+- Papeleria/tarjetas/sobres/carpetas corporativas -> buscar "Papeleria Corporativa"
+- Cajas/estuches/empaques -> buscar "Packaging Personalizado"
+- Proteccion contra falsificacion/seguridad de marca -> buscar "Hologramas de Seguridad"
+- Sellar cajas/evidencia de apertura -> buscar "Cintas Void de Seguridad"
+- Facturacion digital -> buscar "Factura Electronica"
+- Sellado de botellas/frascos -> buscar "Precinto Termocontraible"
+
+REGLA: cuando busques un producto, usa el NOMBRE EXACTO del producto como query en search_product. No busques terminos genericos como "productos refrigerados" — busca "Etiquetas para Refrigerados".`,
     }),
     products: [
       { name: 'Etiquetas Adhesivas', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas autoadhesivas de alta calidad para todo tipo de envases. Alta adherencia, resistentes a frio, calor y fricciones.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/626954867d9517edd360ca27_Portada%20de%20ETIQUETAS.jpg' },
