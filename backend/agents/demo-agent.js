@@ -465,6 +465,16 @@ async function executeTool(toolName, args, clientId) {
   }
 }
 
+// ─── Cache management ────────────────────────────────────────────────────────
+
+export function clearConversationCache(userId) {
+  conversationCache.delete(userId);
+}
+
+export function clearAllConversationCache() {
+  conversationCache.clear();
+}
+
 // ─── Main entry ──────────────────────────────────────────────────────────────
 
 export async function handleDemoChat(userId, message, platform = 'demo', imageUrl = null) {

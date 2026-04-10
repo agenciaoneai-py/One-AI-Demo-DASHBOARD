@@ -3,7 +3,7 @@ import express from 'express';
 // import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { handleDemoChat } from './agents/demo-agent.js';
+import { handleDemoChat, clearConversationCache } from './agents/demo-agent.js';
 import { generateFakeStats, generateDashboardStats, generateFakeConversations, generateFakeLeads, generateFakeChannelConversations } from './services/fake-data.js';
 import configRoutes from './routes/config.js';
 import productsRoutes from './routes/products.js';
@@ -111,6 +111,12 @@ app.put('/api/demo/prompt', async (req, res) => {
     console.error('Error actualizando prompt:', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// Endpoint: Limpiar historial de conversación del simulador
+app.delete('/api/demo/conversation/:userId', (req, res) => {
+  clearConversationCache(req.params.userId);
+  res.json({ success: true });
 });
 
 // Endpoint: Dashboard stats (datos reales de Supabase + generados)

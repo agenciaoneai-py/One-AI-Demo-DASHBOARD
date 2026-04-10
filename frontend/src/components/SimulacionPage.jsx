@@ -273,6 +273,7 @@ function SimulacionPage({ config }) {
   };
 
   const clearChat = () => {
+    fetch(`${API_URL}/api/demo/conversation/${DEMO_USER_ID}`, { method: 'DELETE' }).catch(() => {});
     setMessages([]);
     setUsedCapabilities(new Set());
     setChipsVisible(true);

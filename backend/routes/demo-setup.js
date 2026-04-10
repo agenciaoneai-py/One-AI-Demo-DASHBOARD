@@ -3,6 +3,7 @@ import supabase from '../config/supabase.js';
 import { seedFakeData } from '../services/seed-data.js';
 import { CLIENT_CONFIG } from '../config/client-config.js';
 import { invalidateStatsCache } from '../services/fake-data.js';
+import { clearAllConversationCache } from '../agents/demo-agent.js';
 
 const router = express.Router();
 
@@ -246,8 +247,9 @@ router.post('/setup', async (req, res) => {
       ...mergedFeatures
     };
 
-    // --- STEP 8: Invalidate stats cache ---
+    // --- STEP 8: Invalidate caches ---
     invalidateStatsCache();
+    clearAllConversationCache();
 
     console.log(`🔧 === SETUP COMPLETO ===\n`);
 
