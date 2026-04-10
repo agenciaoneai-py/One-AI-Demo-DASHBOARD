@@ -513,7 +513,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
       tools: DEMO_TOOLS,
       tool_choice: 'auto',
       temperature: 0.85,
-      max_tokens: 600,
+      max_tokens: 250,
       frequency_penalty: 0.5,
       presence_penalty: 0.3,
     });
@@ -558,7 +558,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
         model: 'gpt-4.1',
         messages,
         temperature: 0.85,
-        max_tokens: 600,
+        max_tokens: 250,
         frequency_penalty: 0.5,
         presence_penalty: 0.3,
       });
