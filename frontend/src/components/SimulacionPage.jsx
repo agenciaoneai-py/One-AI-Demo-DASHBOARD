@@ -426,38 +426,38 @@ function SimulacionPage({ config }) {
 
                   {/* ── Products carousel ── */}
                   {msg.type === 'products' && msg.products?.length > 0 && (
-                    <div className="flex justify-start mb-1">
-                      <div className="max-w-[90%]">
-                        <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
-                          {msg.products.map((p, pIdx) => {
-                            const imgSrc = p.image_url || p.image_urls?.[0];
-                            return (
-                              <div key={pIdx} className="bg-white rounded-lg shadow-sm flex-shrink-0 overflow-hidden snap-start" style={{ width: '200px' }}>
-                                {imgSrc && (
-                                  <img src={imgSrc} alt={p.name} loading="lazy"
-                                    className="w-full h-32 object-cover cursor-pointer"
-                                    onClick={() => setLightboxImage(imgSrc)} />
+                    <>
+                      {msg.products.slice(0, 3).map((p, pIdx) => {
+                        const imgSrc = p.image_url || p.image_urls?.[0];
+                        const hasPrice = p.price && Number(p.price) > 0;
+                        const stockNum = p.stock ?? p.stock_quantity;
+                        return (
+                          <div key={pIdx} className="flex justify-start mb-1">
+                            <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ maxWidth: '260px' }}>
+                              {imgSrc && (
+                                <img src={imgSrc} alt={p.name} loading="lazy"
+                                  className="w-full object-cover cursor-pointer"
+                                  style={{ height: '160px' }}
+                                  onClick={() => setLightboxImage(imgSrc)} />
+                              )}
+                              <div className="px-3 py-2">
+                                <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
+                                {p.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.description}</p>
                                 )}
-                                <div className="p-2.5">
-                                  <p className="font-semibold text-gray-900 text-xs leading-tight mb-1 line-clamp-2">{p.name}</p>
-                                  {p.description && <p className="text-xs text-gray-500 mb-1 line-clamp-1">{p.description}</p>}
-                                  {Number(p.price) > 0 && (
-                                    <p className="text-sm font-bold text-green-700">{formatGs(p.price)} {p.currency === 'USD' ? 'USD' : 'Gs'}</p>
-                                  )}
-                                  {(!p.price || Number(p.price) === 0) && (
-                                    <p className="text-xs text-gray-500 italic">Consultar cotizacion</p>
-                                  )}
-                                  {(() => { const s = p.stock ?? p.stock_quantity; return s > 0 && s < 900; })() && (
-                                    <p className="text-xs text-gray-400 mt-0.5">Stock: {p.stock ?? p.stock_quantity}</p>
-                                  )}
-                                </div>
+                                <p className="text-xs mt-1" style={{ color: hasPrice ? '#25D366' : '#8696a0' }}>
+                                  {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar cotizacion'}
+                                </p>
+                                {stockNum > 0 && stockNum < 900 && (
+                                  <p className="text-xs text-gray-400">Stock: {stockNum}</p>
+                                )}
+                                <p className="text-right" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
                               </div>
-                            );
-                          })}
-                        </div>
-                        <p className="text-right mt-0.5 pr-1" style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</p>
-                      </div>
-                    </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
                   )}
 
                   {/* ── Appointment card ── */}
