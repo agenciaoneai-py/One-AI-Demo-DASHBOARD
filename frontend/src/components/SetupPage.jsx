@@ -596,6 +596,7 @@ export default function SetupPage() {
           category: p.category.trim() || 'General',
           description: p.description.trim(),
           stock: Number(p.stock) || 10,
+          image_url: p.image_url || '',
         })),
         features,
         agentConfig,
