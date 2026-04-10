@@ -62,6 +62,16 @@ const ZAMPH_APPT_REASONS = [
 
 function isZamph() { return CLIENT_CONFIG.businessName && CLIENT_CONFIG.businessName.includes('Zamphiropolos'); }
 
+// Fixed Zamphiropolos delivery (despacho) orders
+const ZAMPH_DELIVERIES = [
+  { customer: 'María Fernández — Lácteos del Sur',      address: 'Ruta 2 Km 18, Capiatá',           zone: 'Gran Asunción',   status: 'confirmed',  dayOffset: 0 },
+  { customer: 'Roberto Giménez — Frigorífico Nacional',  address: 'Av. Artigas 1500, Asunción',      zone: 'Asunción Centro', status: 'confirmed',  dayOffset: 0 },
+  { customer: 'Diego Villalba — Laboratorio Catedral',   address: 'Av. España 2340, Asunción',       zone: 'Asunción Centro', status: 'preparing',  dayOffset: 0 },
+  { customer: 'Jorge Mendoza — Banco Regional',          address: 'Av. Mcal. López 1234, Asunción',  zone: 'Asunción Centro', status: 'preparing',  dayOffset: 0 },
+  { customer: 'Fernando Martínez — Agrosol Paraguay',    address: 'Ruta 3 Km 42, Paraguarí',         zone: 'Interior',        status: 'in_transit', dayOffset: 1 },
+  { customer: 'Patricia López — Yerbatera Campesina',    address: 'Ruta 6 Km 195, Hohenau',          zone: 'Interior',        status: 'delivered',  dayOffset: 2 },
+];
+
 // ─── PEDIDOS / ORDERS ───────────────────────────────────────
 
 // Cached per-request product list so /orders and /orders/stats use the same data shape
@@ -98,27 +108,13 @@ async function buildOrders() {
     'cancelled'
   ];
 
-  const count = isZamph() ? randomInt(18, 22) : randomInt(15, 20);
   const orders = [];
 
-  // Zamphiropolos status distribution: more confirmed/preparing
-  const zamphStatuses = [
-    'confirmed', 'confirmed', 'confirmed', 'confirmed', 'confirmed', 'confirmed',
-    'preparing', 'preparing', 'preparing', 'preparing', 'preparing',
-    'pending_confirmation', 'pending_confirmation', 'pending_confirmation', 'pending_confirmation',
-    'delivered', 'delivered', 'delivered',
-    'in_transit', 'in_transit',
-    'ready_to_ship', 'ready_to_ship',
-  ];
-
-  for (let i = 0; i < count; i++) {
-    let items;
-    let customerName;
-
-    if (isZamph()) {
-      // Pick 1-2 Zamphiropolos items with B2B quantities
+  if (isZamph()) {
+    // ── Fixed delivery (despacho) orders for Zamphiropolos ──
+    ZAMPH_DELIVERIES.forEach((del, i) => {
       const itemCount = randomInt(1, 2);
-      items = [];
+      const items = [];
       for (let j = 0; j < itemCount; j++) {
         const item = pick(ZAMPH_ORDER_ITEMS);
         const qtyMultiplier = pick([0.5, 1, 1.5, 2, 3]);
@@ -129,10 +125,79 @@ async function buildOrders() {
           currency: 'Gs',
         });
       }
-      customerName = `${pick(ZAMPH_NAMES)} — ${pick(ZAMPH_COMPANIES)}`;
-    } else {
+      const total = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0);
+      const d = new Date();
+      d.setDate(d.getDate() + del.dayOffset);
+      const createdAt = recentDate(3);
+
+      orders.push({
+        order_id: `ORD-${String(1000 + i).slice(1)}`,
+        customer_name: del.customer,
+        phone: generatePhone(),
+        platform: pick(PLATFORMS),
+        items,
+        total_amount: total,
+        currency: 'Gs',
+        status: del.status,
+        delivery_type: 'delivery',
+        delivery_address: del.address,
+        delivery_zone: del.zone,
+        delivery_fee: 0,
+        scheduled_date: d.toISOString().slice(0, 10),
+        created_at: createdAt,
+        updated_at: createdAt
+      });
+    });
+
+    // ── Remaining pickup orders for Zamphiropolos ──
+    const pickupCount = randomInt(12, 16);
+    const zamphStatuses = [
+      'confirmed', 'confirmed', 'confirmed', 'confirmed',
+      'preparing', 'preparing', 'preparing',
+      'pending_confirmation', 'pending_confirmation', 'pending_confirmation',
+      'delivered', 'delivered',
+      'in_transit',
+      'ready_to_ship', 'ready_to_ship',
+    ];
+
+    for (let i = 0; i < pickupCount; i++) {
+      const itemCount = randomInt(1, 2);
+      const items = [];
+      for (let j = 0; j < itemCount; j++) {
+        const item = pick(ZAMPH_ORDER_ITEMS);
+        const qtyMultiplier = pick([0.5, 1, 1.5, 2, 3]);
+        items.push({
+          product_name: item.product_name,
+          quantity: Math.round(item.quantity * qtyMultiplier),
+          unit_price: item.unit_price,
+          currency: 'Gs',
+        });
+      }
+      const total = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0);
+      const createdAt = recentDate(7);
+      const idx = ZAMPH_DELIVERIES.length + i;
+
+      orders.push({
+        order_id: `ORD-${String(1000 + idx).slice(1)}`,
+        customer_name: `${pick(ZAMPH_NAMES)} — ${pick(ZAMPH_COMPANIES)}`,
+        phone: generatePhone(),
+        platform: pick(PLATFORMS),
+        items,
+        total_amount: total,
+        currency: 'Gs',
+        status: zamphStatuses[i] || pick(zamphStatuses),
+        delivery_type: 'pickup',
+        delivery_address: null,
+        created_at: createdAt,
+        updated_at: createdAt
+      });
+    }
+  } else {
+    const count = randomInt(15, 20);
+
+    for (let i = 0; i < count; i++) {
       const itemCount = randomInt(1, 3);
-      items = [];
+      const items = [];
       for (let j = 0; j < itemCount; j++) {
         const prod = pick(productList);
         const qty = randomInt(1, 2);
@@ -144,27 +209,26 @@ async function buildOrders() {
           image_url: prod.image_urls?.[0] || null
         });
       }
-      customerName = randomName();
+
+      const total = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0);
+      const status = statuses[i] || pick(statuses);
+      const createdAt = recentDate(7);
+
+      orders.push({
+        order_id: `ORD-${String(1000 + i).slice(1)}`,
+        customer_name: randomName(),
+        phone: generatePhone(),
+        platform: pick(PLATFORMS),
+        items,
+        total_amount: total,
+        currency: 'Gs',
+        status,
+        delivery_type: pick(['pickup', 'delivery']),
+        delivery_address: status !== 'cancelled' && Math.random() > 0.4 ? `${pick(['Av. Mariscal López', 'Calle Palma', 'Av. España', 'Calle Mcal. Estigarribia', 'Av. Eusebio Ayala'])} ${randomInt(100, 3500)}` : null,
+        created_at: createdAt,
+        updated_at: createdAt
+      });
     }
-
-    const total = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0);
-    const status = isZamph() ? (zamphStatuses[i] || pick(zamphStatuses)) : (statuses[i] || pick(statuses));
-    const createdAt = recentDate(7);
-
-    orders.push({
-      order_id: `ORD-${String(1000 + i).slice(1)}`,
-      customer_name: customerName,
-      phone: generatePhone(),
-      platform: pick(PLATFORMS),
-      items,
-      total_amount: total,
-      currency: 'Gs',
-      status,
-      delivery_type: isZamph() ? 'pickup' : pick(['pickup', 'delivery']),
-      delivery_address: !isZamph() && status !== 'cancelled' && Math.random() > 0.4 ? `${pick(['Av. Mariscal López', 'Calle Palma', 'Av. España', 'Calle Mcal. Estigarribia', 'Av. Eusebio Ayala'])} ${randomInt(100, 3500)}` : null,
-      created_at: createdAt,
-      updated_at: createdAt
-    });
   }
 
   // Sort newest first
