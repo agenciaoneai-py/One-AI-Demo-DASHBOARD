@@ -202,14 +202,7 @@ function SimulacionPage({ config }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Welcome message on mount
-  useEffect(() => {
-    setMessages([{
-      type: 'agent',
-      text: `Hola! Bienvenido/a a ${businessName}. Soy ${agentName}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`,
-      timestamp: new Date(),
-    }]);
-  }, []);
+  // Chat starts empty — the customer POV opens to a blank conversation
 
   const sendMessage = async (overrideText) => {
     const text = overrideText || inputMessage;
@@ -280,11 +273,7 @@ function SimulacionPage({ config }) {
   };
 
   const clearChat = () => {
-    setMessages([{
-      type: 'agent',
-      text: `Hola! Bienvenido/a a ${businessName}. Soy ${agentName}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`,
-      timestamp: new Date(),
-    }]);
+    setMessages([]);
     setUsedCapabilities(new Set());
     setChipsVisible(true);
   };
@@ -520,7 +509,7 @@ function SimulacionPage({ config }) {
               ))}
 
               {/* Suggestion chips */}
-              {chipsVisible && messages.length <= 1 && (
+              {chipsVisible && messages.length === 0 && (
                 <div className="flex flex-wrap gap-1.5 px-1 pt-1">
                   {getSuggestionChips(businessName).map((chip, i) => (
                     <button key={i} onClick={() => sendMessage(chip)}
