@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useAppContext } from '../App';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -272,6 +273,27 @@ const INITIAL_NOTIFICATIONS = [
   },
 ];
 
+const ZAMPH_NOTIFICATIONS = [
+  { id: 'z_001', type: 'order_update', status: 'sent', platform: 'whatsapp', contact_name: 'Fernando Martínez — Agrosol', title: 'Pedido confirmado', message: 'Fernando, tu pedido de 50.000 Book Labels para agroquímicos fue confirmado. Producción estimada: 10 días hábiles.', scheduled_for: isoOffset(0, -1, 0), sent_at: isoOffset(0, -1, 0), created_at: isoOffset(0, -2, 0) },
+  { id: 'z_002', type: 'appointment_reminder', status: 'sent', platform: 'whatsapp', contact_name: 'Jorge Mendoza — Banco Regional', title: 'Reunión mañana', message: 'Jorge, te recordamos la reunión de mañana a las 10:00 para revisar el diseño de los nuevos cheques de seguridad.', scheduled_for: isoOffset(0, -2, 0), sent_at: isoOffset(0, -2, 0), created_at: isoOffset(-1, 0, 0) },
+  { id: 'z_003', type: 'custom', status: 'sent', platform: 'whatsapp', contact_name: 'Diego Villalba — Lab. Catedral', title: 'Muestras listas', message: 'Diego, las muestras de etiquetas libro para tus 15 presentaciones están listas. ¿Cuándo pasás a retirarlas?', scheduled_for: isoOffset(0, -3, 0), sent_at: isoOffset(0, -3, 0), created_at: isoOffset(0, -4, 0) },
+  { id: 'z_004', type: 'order_update', status: 'sent', platform: 'whatsapp', contact_name: 'Patricia López — Yerbatera Campesina', title: 'Packaging en producción', message: 'Patricia, el packaging flexible para yerba mate 500g y 1kg ya entró en producción. Entrega estimada: viernes.', scheduled_for: isoOffset(0, -4, 0), sent_at: isoOffset(0, -4, 0), created_at: isoOffset(0, -5, 0) },
+  { id: 'z_005', type: 'appointment_reminder', status: 'sent', platform: 'whatsapp', contact_name: 'Roberto Giménez — Frigorífico Nacional', title: 'Entrega de muestras', message: 'Roberto, mañana a las 14:00 te llevamos las muestras de termocontraíbles para embutidos.', scheduled_for: isoOffset(0, -5, 0), sent_at: isoOffset(0, -5, 0), created_at: isoOffset(-1, 0, 0) },
+  { id: 'z_006', type: 'custom', status: 'pending', platform: 'whatsapp', contact_name: 'María Fernández — Lácteos del Sur', title: 'Seguimiento cotización', message: 'María, queremos confirmar si recibiste la cotización de etiquetas para refrigerados que te enviamos la semana pasada.', scheduled_for: isoOffset(0, 2, 0), sent_at: null, created_at: isoOffset(0, -1, 0) },
+  { id: 'z_007', type: 'appointment_reminder', status: 'pending', platform: 'whatsapp', contact_name: 'Luis Aquino — Cervecería Asunción', title: 'Reunión diseño etiquetas', message: 'Luis, te recordamos la reunión del jueves para definir el diseño de las etiquetas de tus 4 variedades.', scheduled_for: isoOffset(1, 0, 0), sent_at: null, created_at: isoOffset(0, 0, 0) },
+  { id: 'z_008', type: 'order_update', status: 'pending', platform: 'whatsapp', contact_name: 'Ricardo Bogado — Coop. Chortitzer', title: 'Pedido listo', message: 'Ricardo, tu pedido de etiquetas para lácteos está listo para coordinación de entrega.', scheduled_for: isoOffset(0, 1, 0), sent_at: null, created_at: isoOffset(0, -1, 0) },
+  { id: 'z_009', type: 'custom', status: 'failed', platform: 'whatsapp', contact_name: 'Silvia Cañete — Azucarera Iturbe', title: 'Mensaje no entregado', message: 'No se pudo enviar la cotización de etiquetas adhesivas. Verificar número de WhatsApp del contacto.', scheduled_for: isoOffset(-1, -2, 0), sent_at: null, created_at: isoOffset(-1, -3, 0) },
+  { id: 'z_010', type: 'order_update', status: 'failed', platform: 'whatsapp', contact_name: 'Ramón Espínola — Maquila Export', title: 'Error de envío', message: 'No se pudo enviar la confirmación del pedido de cintas void. Contactar manualmente.', scheduled_for: isoOffset(-1, -4, 0), sent_at: null, created_at: isoOffset(-1, -5, 0) },
+  { id: 'z_011', type: 'appointment_reminder', status: 'cancelled', platform: 'whatsapp', contact_name: 'Gabriela Insfrán — Embotelladora del Este', title: 'Reunión reprogramada', message: 'La reunión de precintos termocontraíbles fue reprogramada a solicitud del cliente.', scheduled_for: isoOffset(-2, 0, 0), sent_at: null, created_at: isoOffset(-2, -1, 0) },
+  { id: 'z_012', type: 'custom', status: 'cancelled', platform: 'whatsapp', contact_name: 'Marcela Acosta — Textil Guaraní', title: 'Campaña cancelada', message: 'Campaña de seguimiento para hang tags cancelada por el equipo comercial.', scheduled_for: isoOffset(-3, 0, 0), sent_at: null, created_at: isoOffset(-3, -1, 0) },
+  { id: 'z_013', type: 'order_update', status: 'sent', platform: 'whatsapp', contact_name: 'Elena Duarte — Seltz', title: 'Pedido entregado', message: 'Elena, confirmamos la entrega exitosa de 15.000 etiquetas wrap around. Esperamos tu feedback.', scheduled_for: isoOffset(-2, 0, 0), sent_at: isoOffset(-2, 0, 0), created_at: isoOffset(-2, -1, 0) },
+  { id: 'z_014', type: 'appointment_reminder', status: 'sent', platform: 'whatsapp', contact_name: 'Carolina Benítez — Farmacia Central', title: 'Reunión hologramas', message: 'Carolina, recordatorio de la reunión del lunes para ver las opciones de hologramas anti-falsificación.', scheduled_for: isoOffset(-3, 0, 0), sent_at: isoOffset(-3, 0, 0), created_at: isoOffset(-3, -12, 0) },
+  { id: 'z_015', type: 'custom', status: 'sent', platform: 'whatsapp', contact_name: 'Ana Rojas — Cosmética Natural PY', title: 'Artes aprobadas', message: 'Ana, las artes finales de tus etiquetas para cremas fueron aprobadas. Entramos en producción esta semana.', scheduled_for: isoOffset(-4, 0, 0), sent_at: isoOffset(-4, 0, 0), created_at: isoOffset(-4, -2, 0) },
+  { id: 'z_016', type: 'order_update', status: 'sent', platform: 'whatsapp', contact_name: 'Fernando Martínez — Agrosol', title: 'Pedido anterior entregado', message: 'Fernando, confirmamos entrega de las 30.000 etiquetas book label del pedido anterior.', scheduled_for: isoOffset(-8, 0, 0), sent_at: isoOffset(-8, 0, 0), created_at: isoOffset(-8, -1, 0) },
+  { id: 'z_017', type: 'appointment_reminder', status: 'sent', platform: 'whatsapp', contact_name: 'Jorge Mendoza — Banco Regional', title: 'Reunión pasada', message: 'Jorge, gracias por la reunión de la semana pasada. Ya estamos trabajando en el prototipo de los nuevos cheques.', scheduled_for: isoOffset(-10, 0, 0), sent_at: isoOffset(-10, 0, 0), created_at: isoOffset(-10, -1, 0) },
+  { id: 'z_018', type: 'custom', status: 'sent', platform: 'whatsapp', contact_name: 'Diego Villalba — Lab. Catedral', title: 'Contrato renovado', message: 'Diego, el contrato anual de etiquetas libro para las 15 presentaciones fue renovado exitosamente.', scheduled_for: isoOffset(-12, 0, 0), sent_at: isoOffset(-12, 0, 0), created_at: isoOffset(-12, -2, 0) },
+];
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function Toast({ message, onDone }) {
@@ -292,7 +314,9 @@ function Toast({ message, onDone }) {
 // ─── NotificationsPage ────────────────────────────────────────────────────────
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const { config } = useAppContext();
+  const isZamph = config?.businessName?.includes('Zamphiropolos');
+  const [notifications, setNotifications] = useState(isZamph ? ZAMPH_NOTIFICATIONS : INITIAL_NOTIFICATIONS);
   const [typeFilter,    setTypeFilter]    = useState('all');
   const [statusFilter,  setStatusFilter]  = useState('all');
   const [expandedId,    setExpandedId]    = useState(null);

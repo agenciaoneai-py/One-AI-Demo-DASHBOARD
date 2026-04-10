@@ -1,5 +1,6 @@
 import express from 'express';
 import supabase from '../config/supabase.js';
+import { CLIENT_CONFIG } from '../config/client-config.js';
 
 const router = express.Router();
 
@@ -33,6 +34,33 @@ function dateOffset(days, hourMin = 0, hourMax = 23) {
 function recentDate(maxDays = 7) {
   return dateOffset(-randomInt(0, maxDays));
 }
+
+// ─── Zamphiropolos-specific data ─────────────────────────────
+
+const ZAMPH_COMPANIES = ['Lácteos del Sur', 'Frigorífico Nacional', 'Farmacia Central', 'Cervecería Asunción', 'Banco Regional', 'Yerbatera Campesina', 'Laboratorio Catedral', 'Textil Guaraní', 'Agrosol Paraguay', 'Embotelladora del Este', 'Coop. Chortitzer', 'Seltz', 'Azucarera Iturbe'];
+const ZAMPH_NAMES = ['María Fernández', 'Roberto Giménez', 'Carolina Benítez', 'Luis Aquino', 'Jorge Mendoza', 'Patricia López', 'Diego Villalba', 'Marcela Acosta', 'Fernando Martínez', 'Gabriela Insfrán', 'Ricardo Bogado', 'Elena Duarte', 'Silvia Cañete'];
+const ZAMPH_ORDER_ITEMS = [
+  { product_name: 'Etiquetas Adhesivas', quantity: 10000, unit_price: 450 },
+  { product_name: 'Etiquetas Termocontraíbles', quantity: 5000, unit_price: 680 },
+  { product_name: 'Book Label', quantity: 50000, unit_price: 320 },
+  { product_name: 'Etiquetas para Refrigerados', quantity: 8000, unit_price: 520 },
+  { product_name: 'Hologramas de Seguridad', quantity: 500, unit_price: 3500 },
+  { product_name: 'Cintas Void de Seguridad', quantity: 1000, unit_price: 1200 },
+  { product_name: 'Packaging Personalizado', quantity: 2000, unit_price: 2800 },
+  { product_name: 'Hang Tag', quantity: 5000, unit_price: 380 },
+  { product_name: 'Papelería Corporativa', quantity: 3000, unit_price: 450 },
+  { product_name: 'Wrap Around', quantity: 15000, unit_price: 280 },
+  { product_name: 'Precinto Termocontraíble', quantity: 20000, unit_price: 180 },
+  { product_name: 'Cheques de Seguridad', quantity: 500, unit_price: 8500 },
+];
+const ZAMPH_APPT_REASONS = [
+  'Reunión cotización etiquetas', 'Presentación hologramas de seguridad', 'Revisión diseño packaging',
+  'Entrega muestras termocontraíbles', 'Cotización cheques de seguridad', 'Renovación contrato anual',
+  'Revisión de artes finales', 'Presentación factura electrónica', 'Reunión book labels farmacéutica',
+  'Muestra etiquetas refrigerados',
+];
+
+function isZamph() { return CLIENT_CONFIG.businessName && CLIENT_CONFIG.businessName.includes('Zamphiropolos'); }
 
 // ─── PEDIDOS / ORDERS ───────────────────────────────────────
 
@@ -70,39 +98,70 @@ async function buildOrders() {
     'cancelled'
   ];
 
-  const count = randomInt(15, 20);
+  const count = isZamph() ? randomInt(18, 22) : randomInt(15, 20);
   const orders = [];
 
+  // Zamphiropolos status distribution: more confirmed/preparing
+  const zamphStatuses = [
+    'confirmed', 'confirmed', 'confirmed', 'confirmed', 'confirmed', 'confirmed',
+    'preparing', 'preparing', 'preparing', 'preparing', 'preparing',
+    'pending_confirmation', 'pending_confirmation', 'pending_confirmation', 'pending_confirmation',
+    'delivered', 'delivered', 'delivered',
+    'in_transit', 'in_transit',
+    'ready_to_ship', 'ready_to_ship',
+  ];
+
   for (let i = 0; i < count; i++) {
-    const itemCount = randomInt(1, 3);
-    const items = [];
-    for (let j = 0; j < itemCount; j++) {
-      const prod = pick(productList);
-      const qty = randomInt(1, 2);
-      items.push({
-        product_name: prod.name,
-        quantity: qty,
-        unit_price: prod.price,
-        currency: prod.currency || 'Gs',
-        image_url: prod.image_urls?.[0] || null
-      });
+    let items;
+    let customerName;
+
+    if (isZamph()) {
+      // Pick 1-2 Zamphiropolos items with B2B quantities
+      const itemCount = randomInt(1, 2);
+      items = [];
+      for (let j = 0; j < itemCount; j++) {
+        const item = pick(ZAMPH_ORDER_ITEMS);
+        const qtyMultiplier = pick([0.5, 1, 1.5, 2, 3]);
+        items.push({
+          product_name: item.product_name,
+          quantity: Math.round(item.quantity * qtyMultiplier),
+          unit_price: item.unit_price,
+          currency: 'Gs',
+        });
+      }
+      customerName = `${pick(ZAMPH_NAMES)} — ${pick(ZAMPH_COMPANIES)}`;
+    } else {
+      const itemCount = randomInt(1, 3);
+      items = [];
+      for (let j = 0; j < itemCount; j++) {
+        const prod = pick(productList);
+        const qty = randomInt(1, 2);
+        items.push({
+          product_name: prod.name,
+          quantity: qty,
+          unit_price: prod.price,
+          currency: prod.currency || 'Gs',
+          image_url: prod.image_urls?.[0] || null
+        });
+      }
+      customerName = randomName();
     }
 
     const total = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0);
-    const status = statuses[i] || pick(statuses);
+    const status = isZamph() ? (zamphStatuses[i] || pick(zamphStatuses)) : (statuses[i] || pick(statuses));
     const createdAt = recentDate(7);
 
     orders.push({
       order_id: `ORD-${String(1000 + i).slice(1)}`,
-      customer_name: randomName(),
+      customer_name: customerName,
       phone: generatePhone(),
       platform: pick(PLATFORMS),
       items,
       total_amount: total,
       currency: 'Gs',
       status,
-      delivery_type: pick(['pickup', 'delivery']),
-      delivery_address: status !== 'cancelled' && Math.random() > 0.4 ? `${pick(['Av. Mariscal López', 'Calle Palma', 'Av. España', 'Calle Mcal. Estigarribia', 'Av. Eusebio Ayala'])} ${randomInt(100, 3500)}` : null,
+      delivery_type: isZamph() ? 'pickup' : pick(['pickup', 'delivery']),
+      delivery_address: !isZamph() && status !== 'cancelled' && Math.random() > 0.4 ? `${pick(['Av. Mariscal López', 'Calle Palma', 'Av. España', 'Calle Mcal. Estigarribia', 'Av. Eusebio Ayala'])} ${randomInt(100, 3500)}` : null,
       created_at: createdAt,
       updated_at: createdAt
     });
@@ -178,7 +237,7 @@ router.patch('/orders/:id/status', (req, res) => {
 // ─── CITAS / APPOINTMENTS ───────────────────────────────────
 
 function buildAppointments() {
-  const reasons = [
+  const reasons = isZamph() ? ZAMPH_APPT_REASONS : [
     'Consulta de productos', 'Ver catálogo presencial', 'Prueba de anillos',
     'Asesoría personalizada', 'Retiro de pedido', 'Ajuste de medidas',
     'Selección de alianzas', 'Presupuesto personalizado', 'Entrega especial',
@@ -213,7 +272,7 @@ function buildAppointments() {
 
     return {
       appointment_id: `APT-${String(100 + i).slice(1)}`,
-      client_name: randomName(),
+      client_name: isZamph() ? `${pick(ZAMPH_NAMES)} — ${pick(ZAMPH_COMPANIES)}` : randomName(),
       phone: generatePhone(),
       date: dateStr,
       time,

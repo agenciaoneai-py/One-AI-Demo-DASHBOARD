@@ -1,4 +1,5 @@
 import supabase from '../config/supabase.js';
+import { CLIENT_CONFIG } from '../config/client-config.js';
 
 // Función para generar color único por contacto
 function getContactColor(firstName, lastName) {
@@ -82,11 +83,12 @@ export async function generateDashboardStats() {
   const contacts = contactDetailsRes.data || [];
 
   // ── Derived metrics (stable per cache window) ──
-  const conversationMultiplier = randomInt(8, 15);
-  const totalConversations = totalContacts * conversationMultiplier;
+  const isZamph = CLIENT_CONFIG.businessName && CLIENT_CONFIG.businessName.includes('Zamphiropolos');
+  const conversationMultiplier = isZamph ? randomInt(15, 20) : randomInt(8, 15);
+  const totalConversations = isZamph ? randomInt(180, 250) : totalContacts * conversationMultiplier;
   const totalLeads = contacts.filter(c => c.lead_quality === 'warm' || c.lead_quality === 'hot').length;
-  const urgentLeads = contacts.filter(c => c.lead_quality === 'hot').length;
-  const conversionRate = randomInt(22, 32);
+  const urgentLeads = isZamph ? randomInt(35, 50) : contacts.filter(c => c.lead_quality === 'hot').length;
+  const conversionRate = isZamph ? randomInt(28, 35) : randomInt(22, 32);
 
   // ── Channel distribution from actual contact platforms ──
   const channelCounts = { instagram: 0, whatsapp: 0, facebook: 0 };
@@ -139,9 +141,9 @@ export async function generateDashboardStats() {
   });
 
   // ── Revenue data ──
-  const totalRevenue = contacts.reduce((sum, c) => sum + (parseFloat(c.lifetime_value) || 0), 0);
-  const ordersCount = randomInt(28, 45);
-  const avgOrderValue = ordersCount > 0 ? Math.round(totalRevenue / ordersCount) : 0;
+  const totalRevenue = isZamph ? randomInt(150, 250) * 1000000 : contacts.reduce((sum, c) => sum + (parseFloat(c.lifetime_value) || 0), 0);
+  const ordersCount = isZamph ? randomInt(40, 60) : randomInt(28, 45);
+  const avgOrderValue = isZamph ? randomInt(3000, 5000) * 1000 : (ordersCount > 0 ? Math.round(totalRevenue / ordersCount) : 0);
   const igRevPct = channelDistribution.instagram / 100;
   const waRevPct = channelDistribution.whatsapp / 100;
   const fbRevPct = channelDistribution.facebook / 100;
@@ -195,7 +197,16 @@ export async function generateDashboardStats() {
 
   // ── Enhanced recent activity with richer fields ──
   const statusLabels = ['Calificado', 'Nuevo', 'En seguimiento', 'Convertido', 'Interesado'];
-  const noteTemplates = [
+  const noteTemplates = isZamph ? [
+    'Cotización etiquetas adhesivas',
+    'Consulta hologramas de seguridad',
+    'Pedido de packaging personalizado',
+    'Renovación de cheques de seguridad',
+    'Etiquetas termocontraíbles para bebidas',
+    'Book labels para farmacéutica',
+    'Hang tags para línea textil',
+    'Precintos de seguridad para botellas',
+  ] : [
     'Interesada en pulsera de perlas',
     'Consultó precios de anillos',
     'Pidió catálogo completo',
@@ -343,8 +354,84 @@ export function generateFakeLeads() {
   ];
 }
 
+// ─── Zamphiropolos-specific conversations ────────────────────────────────────
+
+const ZAMPH_CONVERSATIONS = [
+  { contact: { first_name: 'María', last_name: 'Fernández', company: 'Lácteos del Sur' }, platform: 'whatsapp', temp: 'hot', score: 85,
+    msgs: ['Hola, necesito cotización de etiquetas adhesivas para yogurt', 'Hola María! Dale, para yogurt usamos etiquetas resistentes a frío y humedad. ¿Cuántas unidades necesitás?', 'Unas 10.000 mensuales, son potes de 200ml', 'Perfecto, te paso con Victor Barreto nuestro asesor de etiquetas para armarte la cotización'] },
+  { contact: { first_name: 'Roberto', last_name: 'Giménez', company: 'Frigorífico Nacional' }, platform: 'whatsapp', temp: 'hot', score: 90,
+    msgs: ['Buenas tardes, estamos buscando etiquetas termocontraíbles para embutidos', 'Hola Roberto! Genial, trabajamos con varios frigoríficos. ¿Qué tipo de envase usan?', 'Bandejas termoformadas, necesitamos full sleeve', 'Dale, las termocontraíbles son ideales para eso. Te muestro opciones y te conecto con el asesor'] },
+  { contact: { first_name: 'Carolina', last_name: 'Benítez', company: 'Farmacia Central' }, platform: 'whatsapp', temp: 'warm', score: 72,
+    msgs: ['Hola, necesitamos hologramas de seguridad para medicamentos', 'Hola Carolina! Sí, trabajamos con varias farmacéuticas. ¿Es para verificación de autenticidad?', 'Exacto, tenemos problemas de falsificación en el mercado', 'Te entiendo. Te paso con Fabricio Talavera del área de seguridad'] },
+  { contact: { first_name: 'Luis', last_name: 'Aquino', company: 'Cervecería Asunción' }, platform: 'whatsapp', temp: 'hot', score: 88,
+    msgs: ['Buen día, consulta por etiquetas para botellas de cerveza artesanal', 'Hola Luis! Para cerveza artesanal las adhesivas o wrap around quedan muy bien. ¿Cuántas variedades tenés?', '4 variedades, unas 2000 botellas por mes de cada una', 'Dale, 8000 etiquetas mensuales. ¿Ya tenés los diseños o necesitás que los hagamos?'] },
+  { contact: { first_name: 'Ana', last_name: 'Rojas', company: 'Cosmética Natural PY' }, platform: 'instagram', temp: 'warm', score: 65,
+    msgs: ['Hola! Vi que hacen etiquetas personalizadas. Tengo una marca de cosméticos', 'Hola Ana! Sí, hacemos etiquetas para cosméticos. ¿Son frascos, tubos o potes?', 'Frascos de vidrio para cremas y aceites esenciales', 'Para vidrio las adhesivas quedan perfectas. ¿Querés que te muestre opciones?'] },
+  { contact: { first_name: 'Jorge', last_name: 'Mendoza', company: 'Banco Regional' }, platform: 'whatsapp', temp: 'hot', score: 92,
+    msgs: ['Necesitamos renovar nuestro stock de cheques de seguridad', 'Hola Jorge! Dale, ¿cuántos talonarios necesitan y para qué sucursales?', '500 talonarios, para las 12 sucursales', 'Listo, te paso con el asesor de seguridad para coordinar el pedido'] },
+  { contact: { first_name: 'Patricia', last_name: 'López', company: 'Yerbatera Campesina' }, platform: 'facebook', temp: 'warm', score: 70,
+    msgs: ['Buenas, estamos rediseñando el packaging de nuestra yerba mate', 'Hola Patricia! Trabajamos con varias yerbateras. ¿Es packaging flexible o caja?', 'Packaging flexible, bolsas de 500g y 1kg', 'Te conecto con Alma Aveiro de packaging para que vean materiales y diseño'] },
+  { contact: { first_name: 'Diego', last_name: 'Villalba', company: 'Laboratorio Catedral' }, platform: 'whatsapp', temp: 'hot', score: 95,
+    msgs: ['Hola, necesitamos etiquetas libro para productos farmacéuticos', 'Hola Diego! Las book label son perfectas para farma. ¿Cuántos productos?', '15 presentaciones, tiraje de 50.000 unidades por producto', 'Perfecto, es un volumen importante. Te agendo con Victor para especificaciones'] },
+  { contact: { first_name: 'Marcela', last_name: 'Acosta', company: 'Textil Guaraní' }, platform: 'instagram', temp: 'warm', score: 68,
+    msgs: ['Hola! Necesitamos hang tags para nuestra nueva línea de ropa', 'Hola Marcela! Los hang tags le dan identidad premium a la marca. ¿Qué estilo buscás?', 'Algo elegante con stamping dorado, unas 5000 unidades', 'Genial, podemos hacer stamping dorado sobre cartulina negra o kraft'] },
+  { contact: { first_name: 'Fernando', last_name: 'Martínez', company: 'Agrosol Paraguay' }, platform: 'whatsapp', temp: 'hot', score: 93,
+    msgs: ['Buen día, somos Agrosol. Necesitamos renovar etiquetas de agroquímicos', 'Hola Fernando! Ya trabajamos con ustedes, genial. ¿Productos nuevos?', 'Sí, 3 herbicidas y 2 insecticidas', 'Dale, para agroquímicos usamos book label con resistencia UV. Te conecto con Victor'] },
+  { contact: { first_name: 'Gabriela', last_name: 'Insfrán', company: 'Embotelladora del Este' }, platform: 'whatsapp', temp: 'warm', score: 74,
+    msgs: ['Hola, necesitamos precintos termocontraíbles para botellas de agua', 'Hola Gabriela! Sí, los precintos garantizan la integridad del sellado. ¿Qué volumen manejan?', 'Unas 100.000 unidades mensuales', 'Perfecto, te paso con Victor para la cotización del volumen'] },
+  { contact: { first_name: 'Ricardo', last_name: 'Bogado', company: 'Coop. Chortitzer' }, platform: 'facebook', temp: 'hot', score: 87,
+    msgs: ['Buenas, necesitamos etiquetas para nuestra línea de lácteos', 'Hola Ricardo! Trabajamos con varias empresas del rubro. ¿Son para productos refrigerados?', 'Sí, leche y quesos', 'Tenemos etiquetas especiales para frío. Te muestro opciones'] },
+];
+
+function buildZamphConversations(channel) {
+  const now = Date.now();
+  return ZAMPH_CONVERSATIONS
+    .filter(c => c.platform === channel)
+    .map((conv, i) => {
+      const { first_name, last_name, company } = conv.contact;
+      const color = getContactColor(first_name, last_name);
+      const messages = conv.msgs.map((text, j) => ({
+        id: `msg_${i}_${j}`,
+        text,
+        sender: j % 2 === 0 ? 'user' : 'ai',
+        timestamp: new Date(now - (conv.msgs.length - j) * 8 * 60 * 1000).toISOString(),
+        seen: true,
+      }));
+      return {
+        id: `conv_${channel}_${i + 1}`,
+        platform: channel,
+        status: conv.temp === 'hot' ? 'calificado' : 'en_progreso',
+        unreadCount: Math.random() > 0.6 ? randomInt(1, 3) : 0,
+        aiEnabled: true,
+        assignedTo: null,
+        contact: {
+          subscriber_id: `${7000000000 + i}`,
+          first_name, last_name, color,
+          phone: channel === 'whatsapp' ? `+595 9${randomInt(71,99)} ${randomInt(100000,999999)}` : null,
+          instagram_id: channel === 'instagram' ? `${17841400000000000 + i}` : null,
+          whatsapp_phone: channel === 'whatsapp' ? `+595 9${randomInt(71,99)} ${randomInt(100000,999999)}` : null,
+          email: `${first_name.toLowerCase()}@${company.toLowerCase().replace(/\s+/g, '')}.com.py`,
+          last_interaction_at: new Date(now - randomInt(10, 180) * 60 * 1000).toISOString(),
+          status: 'active',
+          custom_fields: { empresa: company, rubro: 'Industrial', ciudad: pick(['Asunción', 'Luque', 'San Lorenzo', 'Ciudad del Este']) },
+          tags: conv.temp === 'hot' ? ['lead_caliente', 'cotizacion'] : ['consulta', 'seguimiento'],
+          leadScore: conv.score,
+          temperature: conv.temp,
+        },
+        lastMessage: { text: conv.msgs[conv.msgs.length - 1], timestamp: new Date(now - randomInt(5, 120) * 60 * 1000).toISOString(), sender: conv.msgs.length % 2 === 0 ? 'user' : 'ai' },
+        messages,
+      };
+    });
+}
+
 // Generador de conversaciones por canal
 export function generateFakeChannelConversations(channel, count = 15) {
+  // Zamphiropolos-specific fixed conversations
+  if (CLIENT_CONFIG.businessName && CLIENT_CONFIG.businessName.includes('Zamphiropolos')) {
+    const zamphConvs = buildZamphConversations(channel);
+    if (zamphConvs.length > 0) return zamphConvs;
+  }
+
   const firstNames = ['María', 'Carlos', 'Ana', 'Luis', 'Rosa', 'Pedro', 'Carmen', 'José', 'Laura', 'Miguel', 'Sofía', 'Diego', 'Patricia', 'Fernando', 'Verónica', 'Héctor', 'Lorena'];
   const lastNames = ['González', 'Rodríguez', 'Martínez', 'López', 'Fernández', 'Sánchez', 'Ramírez', 'Torres', 'Flores', 'Benítez', 'Cardozo', 'Cabrera', 'Franco', 'Mendoza', 'Silva'];
 

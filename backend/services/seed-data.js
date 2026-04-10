@@ -34,8 +34,28 @@ function hoursAgo(h) {
  * Generates and inserts realistic demo contacts into Supabase.
  * Returns the inserted contacts.
  */
+// Fixed Zamphiropolos contacts — B2B with real-sounding Paraguayan companies
+const ZAMPH_CONTACTS = [
+  { name: 'María Fernández', company: 'Lácteos del Sur', platform: 'whatsapp', temp: 'hot', score: 85, value: 8500000 },
+  { name: 'Roberto Giménez', company: 'Frigorífico Nacional', platform: 'whatsapp', temp: 'hot', score: 90, value: 12000000 },
+  { name: 'Carolina Benítez', company: 'Farmacia Central', platform: 'whatsapp', temp: 'warm', score: 72, value: 3200000 },
+  { name: 'Luis Aquino', company: 'Cervecería Asunción', platform: 'whatsapp', temp: 'hot', score: 88, value: 6800000 },
+  { name: 'Ana Rojas', company: 'Cosmética Natural PY', platform: 'instagram', temp: 'warm', score: 65, value: 2100000 },
+  { name: 'Jorge Mendoza', company: 'Banco Regional', platform: 'whatsapp', temp: 'hot', score: 92, value: 15000000 },
+  { name: 'Patricia López', company: 'Yerbatera Campesina', platform: 'facebook', temp: 'warm', score: 70, value: 4500000 },
+  { name: 'Diego Villalba', company: 'Laboratorio Catedral', platform: 'whatsapp', temp: 'hot', score: 95, value: 18000000 },
+  { name: 'Marcela Acosta', company: 'Textil Guaraní', platform: 'instagram', temp: 'warm', score: 68, value: 1800000 },
+  { name: 'Fernando Martínez', company: 'Agrosol Paraguay', platform: 'whatsapp', temp: 'hot', score: 93, value: 22000000 },
+  { name: 'Gabriela Insfrán', company: 'Embotelladora del Este', platform: 'whatsapp', temp: 'warm', score: 74, value: 5500000 },
+  { name: 'Ricardo Bogado', company: 'Coop. Chortitzer', platform: 'facebook', temp: 'hot', score: 87, value: 9800000 },
+  { name: 'Silvia Cañete', company: 'Azucarera Iturbe', platform: 'whatsapp', temp: 'cold', score: 35, value: 0 },
+  { name: 'Ramón Espínola', company: 'Maquila Export', platform: 'whatsapp', temp: 'cold', score: 28, value: 0 },
+  { name: 'Elena Duarte', company: 'Seltz', platform: 'whatsapp', temp: 'hot', score: 91, value: 14000000 },
+];
+
 export async function seedFakeData(businessName, agentName) {
-  const contactCount = randomInt(8, 12);
+  const isZamph = businessName && businessName.includes('Zamphiropolos');
+  const contactCount = isZamph ? ZAMPH_CONTACTS.length : randomInt(8, 12);
   const usedNames = new Set();
   const contacts = [];
 
@@ -49,26 +69,46 @@ export async function seedFakeData(businessName, agentName) {
 
   for (let i = 0; i < contactCount; i++) {
     let firstName, lastName, fullName;
-    do {
-      firstName = pick(PARAGUAYAN_FIRST_NAMES);
-      lastName = pick(PARAGUAYAN_LAST_NAMES);
-      fullName = `${firstName} ${lastName}`;
-    } while (usedNames.has(fullName));
+
+    if (isZamph) {
+      const zc = ZAMPH_CONTACTS[i];
+      const parts = zc.name.split(' ');
+      firstName = parts[0];
+      lastName = parts.slice(1).join(' ');
+      fullName = zc.name;
+    } else {
+      do {
+        firstName = pick(PARAGUAYAN_FIRST_NAMES);
+        lastName = pick(PARAGUAYAN_LAST_NAMES);
+        fullName = `${firstName} ${lastName}`;
+      } while (usedNames.has(fullName));
+    }
     usedNames.add(fullName);
 
-    const temp = temperatures[i] || pick(['warm', 'cold']);
-    const platform = pick(PLATFORMS);
+    const temp = isZamph ? ZAMPH_CONTACTS[i].temp : (temperatures[i] || pick(['warm', 'cold']));
+    const platform = isZamph ? ZAMPH_CONTACTS[i].platform : pick(PLATFORMS);
 
     // Engagement score correlates with temperature
-    const engagementRanges = { hot: [70, 95], warm: [40, 69], cold: [20, 39], closed: [50, 85] };
-    const [eMin, eMax] = engagementRanges[temp];
-    const engagementScore = randomInt(eMin, eMax);
+    const engagementScore = isZamph ? ZAMPH_CONTACTS[i].score : (() => {
+      const engagementRanges = { hot: [70, 95], warm: [40, 69], cold: [20, 39], closed: [50, 85] };
+      const [eMin, eMax] = engagementRanges[temp];
+      return randomInt(eMin, eMax);
+    })();
 
     // Map temperature to lead_quality and status
     const qualityMap = { hot: 'hot', warm: 'warm', cold: 'cold', closed: 'hot' };
     const statusMap = { hot: 'qualified', warm: 'active', cold: 'new', closed: 'converted' };
 
-    const noteTemplates = [
+    const noteTemplates = isZamph ? [
+      `Cotización de etiquetas para ${ZAMPH_CONTACTS[i]?.company || 'su empresa'}`,
+      `Consulta de packaging personalizado`,
+      `Revisión de diseño de etiquetas`,
+      `Pedido de hologramas de seguridad`,
+      `Solicitud de muestras de productos`,
+      `Reunión comercial agendada`,
+      `Seguimiento de cotización pendiente`,
+      `Renovación de contrato anual`,
+    ] : [
       `Consultó por productos de ${businessName}`,
       `Interesado/a en recibir catálogo`,
       `${agentName} le envió información`,
@@ -79,10 +119,9 @@ export async function seedFakeData(businessName, agentName) {
       `Volvió a preguntar por stock`,
     ];
 
-    const tagOptions = [
-      'interesado', 'consulta_precio', 'delivery', 'vip',
-      'regalo', 'urgente', 'seguimiento', 'referido'
-    ];
+    const tagOptions = isZamph
+      ? ['cotizacion', 'etiquetas', 'packaging', 'seguridad', 'vip', 'urgente', 'seguimiento', 'cliente_activo']
+      : ['interesado', 'consulta_precio', 'delivery', 'vip', 'regalo', 'urgente', 'seguimiento', 'referido'];
 
     // 1-2 notes with timestamps
     const notes = [];
@@ -99,19 +138,27 @@ export async function seedFakeData(businessName, agentName) {
     const shuffled = [...tagOptions].sort(() => 0.5 - Math.random());
     const tags = shuffled.slice(0, tagCount);
 
-    const lifetimeValues = { hot: randomInt(200000, 800000), warm: randomInt(50000, 200000), cold: 0, closed: randomInt(300000, 1500000) };
+    const lifetimeValues = isZamph
+      ? { hot: ZAMPH_CONTACTS[i]?.value || randomInt(5000000, 20000000), warm: randomInt(1000000, 5000000), cold: 0, closed: randomInt(8000000, 25000000) }
+      : { hot: randomInt(200000, 800000), warm: randomInt(50000, 200000), cold: 0, closed: randomInt(300000, 1500000) };
+
+    const emailAddr = isZamph
+      ? `${firstName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}@${(ZAMPH_CONTACTS[i]?.company || 'empresa').toLowerCase().replace(/[^a-z0-9]/g, '')}.com.py`
+      : (Math.random() > 0.5 ? `${firstName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.${lastName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}@gmail.com` : null);
 
     contacts.push({
       name: fullName,
       phone: generatePhone(),
-      email: Math.random() > 0.5 ? `${firstName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.${lastName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}@gmail.com` : null,
+      email: emailAddr,
       platform,
       status: statusMap[temp],
       lead_quality: qualityMap[temp],
       engagement_score: engagementScore,
       lifetime_value: lifetimeValues[temp],
       last_interaction_at: hoursAgo(randomInt(1, 72)),
-      custom_fields: { notes, ciudad: pick(['Asunción', 'Ciudad del Este', 'Encarnación', 'San Lorenzo', 'Luque']) },
+      custom_fields: isZamph
+        ? { notes, empresa: ZAMPH_CONTACTS[i]?.company, ciudad: pick(['Asunción', 'Luque', 'San Lorenzo', 'Ciudad del Este']) }
+        : { notes, ciudad: pick(['Asunción', 'Ciudad del Este', 'Encarnación', 'San Lorenzo', 'Luque']) },
       tags // stored temporarily, inserted into contact_tags after
     });
   }
