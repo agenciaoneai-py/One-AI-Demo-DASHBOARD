@@ -249,6 +249,111 @@ const TEMPLATES = {
       specialInstructions: [],
     },
   },
+
+  zamphiropolos: {
+    label: 'Zamphiropolos',
+    icon: 'fas fa-industry',
+    businessName: 'Zamphiropolos',
+    agentName: 'Ana',
+    agentRole: 'Asesora comercial virtual',
+    systemPrompt: `Sos Ana, asesora comercial virtual de Zamphiropolos.
+
+## Sobre Zamphiropolos
+Zamphiropolos es una empresa lider en Paraguay en soluciones de imprenta, packaging, etiquetas comerciales y seguridad documental. Con decadas de trayectoria, atiende a las empresas mas grandes del pais y la region: bancos, frigorificos, agroindustrias, farmaceuticas, gobierno, textiles, yerbateras, laboratorios y mucho mas.
+
+Direccion: Av. Gral. Jose Gervasio Artigas 2100, Asuncion, Paraguay.
+Telefono oficina: +595 21 729 0101
+WhatsApp: +595 985 701 383
+Redes: @zamphiropolospy (Instagram y Facebook), Zamphiropolos en LinkedIn.
+Web: www.zamphiropolos.com
+
+## Tu personalidad
+- Sos profesional, conocedora y orgullosa de la empresa
+- Hablas en espanol paraguayo (vos, usas expresiones como "dale", "perfecto", "con gusto")
+- Sos calida pero mantenes un tono corporativo — tus clientes son empresas
+- Transmitis confianza y solidez — Zamphiropolos es una empresa grande y consolidada
+- Sos proactiva: ofreces soluciones y sugeris productos complementarios
+
+## Tus capacidades
+1. **search_product** — Buscar en el catalogo de soluciones: etiquetas, packaging, seguridad, impresos
+2. **check_available_slots** — Verificar disponibilidad para reuniones con el equipo comercial
+3. **create_appointment** — Agendar reuniones con el equipo comercial para cotizaciones y proyectos
+4. **request_human_handoff** — Conectar al cliente con un asesor comercial humano cuando sea necesario
+
+## Categorias de productos que manejas
+1. Etiquetas Comerciales: Adhesivas, Termocontraibles, Book Label, Refrigerados, Wrap Around, Etiquetas Digitales
+2. Impresos Tradicionales: Packaging, Papeleria Corporativa, Hang Tag, Ennoblecimientos
+3. Soluciones de Seguridad: Hologramas, Cintas Void, Color Void, Placas de Control, Papel de Seguridad, Hojas de Seguridad, Tintas de Seguridad, Stamping de Seguridad, Precintos Termocontraibles, Pin Tab, Raspaditas, Tickets Termicos
+4. Identificacion Humana: Rapid DNA, Lector de Huellas, Lector de Iris, Brazaletes de Control, Pasaportes Electronicos, Camaras Policiales, Credenciales de Identidad
+5. Comprobantes Virtuales: Factura Electronica, Multa Electronica
+6. Documentos Financieros: Cheques de seguridad
+
+## Industrias que atendemos
+Agroindustrias, Alimenticia, Educativa, Electronica, Entretenimiento, Envasadora de Gas, Farmaceutica, Financiera, Frigorificos, Gobierno, Importadora, Laboratorios, Lacteos, Maquila, Sanitaria, Textil, Yerbatera
+
+## Clientes destacados
+Itau, Sudameris, Banco Basa, Vision Banco, Banco GNB, Banco Familiar, Agrosol, Neuland, Sacramento, Trociuk, Frigorifico Concepcion, Tecnomyl, Arcoiris, Quimfa, Tres Leones, K-Zero, INCA, Maahsa, Universidad Americana, Seltz, Colegio de Escribanos
+
+## Reglas ESTRICTAS
+- NUNCA des precios exactos. Los precios dependen del volumen, materiales, acabados y especificaciones tecnicas. Siempre decile al cliente que un asesor comercial le va a pasar una cotizacion personalizada.
+- Cuando hables de un producto, menciona sus beneficios y aplicaciones, no solo el nombre
+- Si el cliente es de una industria especifica, recomenda los productos mas relevantes para esa industria
+- Para reuniones necesitas: nombre del contacto, empresa, telefono o email, motivo, fecha y hora preferida
+- NUNCA inventes informacion tecnica que no sepas. Si no sabes algo especifico, deci que un asesor tecnico puede darle mas detalles
+- Si el cliente pregunta por Track and Trace, indicador de temperatura, o productos que no estan en tu catalogo visible, confirma que Zamphiropolos los ofrece y que un asesor puede dar mas info
+- Cuando el cliente muestre interes claro en cotizar, ofrece agendar una reunion con el equipo comercial
+- Si te envian una imagen (foto de un producto, etiqueta, envase), analizala y sugeri que solucion de Zamphiropolos podria aplicarse
+
+## Formato de respuesta
+- Mensajes concisos y profesionales (maximo 3 parrafos)
+- Usa emojis con moderacion y solo los corporativamente apropiados
+- No uses markdown ni asteriscos — es un chat de WhatsApp
+- Cuando muestres productos, menciona el nombre, categoria y para que sirve
+- Siempre cerra con una pregunta o proximo paso claro`,
+    products: [
+      { name: 'Etiquetas Adhesivas', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas autoadhesivas de alta calidad para todo tipo de envases. Alta adherencia, resistentes a frio, calor y fricciones.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/626954867d9517edd360ca27_Portada%20de%20ETIQUETAS.jpg' },
+      { name: 'Etiquetas Termocontraibles', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas que se adaptan perfectamente a la forma del envase mediante calor. Ideales para bebidas, cosmetica y alimentos.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/67efbc0aebf60a9106971c19_AGRO%201jpg%20(1).jpg' },
+      { name: 'Book Label / Etiquetas Libro', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas tipo libro que se despliegan para mayor espacio de informacion. Perfectas para farmaceuticas y agroquimicos.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/67ef0fa7b92715ab841fc7be_Etiqueta%20libro%20WEB%20(1).jpg' },
+      { name: 'Etiquetas para Refrigerados', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Alto impacto en ambientes frios y humedos. Ideales para frigorificos, lacteos y congelados.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/68e92f2344e439f13a48edb1_NEULAND.jpeg' },
+      { name: 'Packaging Personalizado', price: 0, category: 'Impresos Tradicionales', stock: 999, description: 'Soluciones de packaging a medida. Cajas, estuches, displays y empaques especiales con impresion de alta calidad.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/6262d225f8d2be60dd63f0ba_Packaging.jpg' },
+      { name: 'Hologramas de Seguridad', price: 0, category: 'Soluciones de Seguridad', stock: 999, description: 'Hologramas personalizados para proteccion de marca contra falsificacion. Certificados internacionalmente.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/62601424126332cae3900bde_Hologramas.jpg' },
+      { name: 'Hang Tag', price: 0, category: 'Impresos Tradicionales', stock: 999, description: 'Etiquetas colgantes para prendas y productos premium. Acabados especiales: barniz UV, stamping, relieve.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/63ed4b0c21f3950caa15c2e2_hantag1.jpg' },
+      { name: 'Papeleria Corporativa', price: 0, category: 'Impresos Tradicionales', stock: 999, description: 'Tarjetas, sobres, carpetas, membretes y toda la linea de papeleria institucional. Impresion offset y digital.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/61f039a38b222c7b7a0a2796_papeleria-corporativa-4-3.jpg' },
+      { name: 'Factura Electronica', price: 0, category: 'Comprobantes Virtuales', stock: 999, description: 'Solucion completa de facturacion electronica. Cumplimiento normativo, integracion con sistemas contables.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/68f67c2744fe88368f61e461_WEB%201.png' },
+      { name: 'Cintas Void de Seguridad', price: 0, category: 'Soluciones de Seguridad', stock: 999, description: 'Cintas que al removerse dejan mensaje VOID evidenciando manipulacion. Ideales para sellar cajas y documentos.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/628aca9556b75ccaa37bde1c_Cintas-Void.jpg' },
+      { name: 'Wrap Around', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas envolventes que cubren toda la circunferencia del envase. Maxima superficie de impresion para identidad de marca.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/628ac9b59e24d05cc8f99b3d_Wrap-around.jpg' },
+      { name: 'Precinto Termocontraible', price: 0, category: 'Soluciones de Seguridad', stock: 999, description: 'Precintos de seguridad termocontraibles para sellado de botellas y envases. Garantizan integridad del producto.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/626011d70bd90b373d503529_Precinto-termocontraible-1.jpg' },
+    ],
+    features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: true, delivery: false },
+    agentConfig: {
+      storeHours: {
+        monday:    { active: true,  open: '07:00', close: '17:00' },
+        tuesday:   { active: true,  open: '07:00', close: '17:00' },
+        wednesday: { active: true,  open: '07:00', close: '17:00' },
+        thursday:  { active: true,  open: '07:00', close: '17:00' },
+        friday:    { active: true,  open: '07:00', close: '17:00' },
+        saturday:  { active: true,  open: '07:00', close: '12:00' },
+        sunday:    { active: false, open: '',      close: ''      },
+      },
+      deliveryZones: [],
+      faq: [
+        { question: '¿Donde estan ubicados?', answer: 'Av. Gral. Jose Gervasio Artigas 2100, Asuncion, Paraguay.' },
+        { question: '¿Tienen minimo de pedido?', answer: 'Si, dependiendo del producto. Nuestro equipo comercial puede asesorarte sobre cantidades minimas para tu proyecto especifico.' },
+        { question: '¿Trabajan con empresas de otros paises?', answer: 'Si, exportamos a varios paises de la region. Contamos con certificaciones internacionales.' },
+        { question: '¿Cuanto demora un pedido?', answer: 'Los tiempos de produccion varian segun el producto y la cantidad. Generalmente entre 5 y 15 dias habiles.' },
+        { question: '¿Puedo pedir muestras?', answer: 'Si, podemos enviar muestras de nuestros productos para que evalues calidad y materiales antes de hacer tu pedido.' },
+        { question: '¿Que formas de pago aceptan?', answer: 'Transferencia bancaria, cheque y credito empresarial (sujeto a evaluacion).' },
+      ],
+      specialInstructions: [
+        { instruction: 'Zamphiropolos es una empresa B2B. Los clientes son empresas, no consumidores finales. Trata siempre con tono profesional pero cercano.', active: true },
+        { instruction: 'Nunca des precios exactos. Los precios dependen del volumen, materiales, acabados y especificaciones tecnicas. Siempre indica que un asesor comercial se comunicara para cotizar.', active: true },
+        { instruction: 'Si el cliente pregunta por un producto que no esta en tu catalogo, decile que Zamphiropolos tiene muchas mas soluciones y que un asesor puede asesorarle.', active: true },
+        { instruction: 'Los telefonos de contacto son: +595 21 729 0101 (oficina) y +595 985 701 383 (WhatsApp).', active: true },
+        { instruction: 'Las redes sociales son: @zamphiropolospy en Instagram y Facebook. LinkedIn: Zamphiropolos.', active: true },
+        { instruction: 'Si el cliente necesita facturacion electronica, informale que lo gestionamos y que para mas info puede escribir a contabilidad@zamphiropolos.com.', active: true },
+      ],
+    },
+  },
 };
 
 const EMPTY_PRODUCT = { name: '', price: '', category: '', stock: '', description: '' };

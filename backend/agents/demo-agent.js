@@ -226,6 +226,7 @@ async function executeTool(toolName, args, clientId) {
         products: data.map(p => ({
           name: p.name,
           price: p.price,
+          price_note: (!p.price || Number(p.price) === 0) ? 'Precio a cotizar — consultar con asesor comercial' : null,
           currency: p.currency || 'Gs',
           stock: p.stock_quantity,
           description: p.description,
@@ -261,6 +262,7 @@ async function executeTool(toolName, args, clientId) {
           products: (allProducts || []).map(p => ({
             name: p.name,
             price: p.price,
+            price_note: (!p.price || Number(p.price) === 0) ? 'Precio a cotizar — consultar con asesor comercial' : null,
             currency: p.currency || 'Gs',
             stock: p.stock_quantity,
             description: p.description,
@@ -282,6 +284,7 @@ async function executeTool(toolName, args, clientId) {
         products: (products || []).map(p => ({
           name: p.name,
           price: p.price,
+          price_note: (!p.price || Number(p.price) === 0) ? 'Precio a cotizar — consultar con asesor comercial' : null,
           currency: p.currency || 'Gs',
           stock: p.stock_quantity,
           description: p.description,

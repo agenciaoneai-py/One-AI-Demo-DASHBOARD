@@ -447,8 +447,13 @@ function SimulacionPage({ config }) {
                                 <div className="p-2.5">
                                   <p className="font-semibold text-gray-900 text-xs leading-tight mb-1 line-clamp-2">{p.name}</p>
                                   {p.description && <p className="text-xs text-gray-500 mb-1 line-clamp-1">{p.description}</p>}
-                                  <p className="text-sm font-bold text-green-700">{formatGs(p.price)} {p.currency === 'USD' ? 'USD' : 'Gs'}</p>
-                                  {(p.stock ?? p.stock_quantity) > 0 && (
+                                  {Number(p.price) > 0 && (
+                                    <p className="text-sm font-bold text-green-700">{formatGs(p.price)} {p.currency === 'USD' ? 'USD' : 'Gs'}</p>
+                                  )}
+                                  {(!p.price || Number(p.price) === 0) && (
+                                    <p className="text-xs text-gray-500 italic">Consultar cotizacion</p>
+                                  )}
+                                  {(() => { const s = p.stock ?? p.stock_quantity; return s > 0 && s < 900; })() && (
                                     <p className="text-xs text-gray-400 mt-0.5">Stock: {p.stock ?? p.stock_quantity}</p>
                                   )}
                                 </div>
