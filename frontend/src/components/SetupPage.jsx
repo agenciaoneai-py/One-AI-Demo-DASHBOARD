@@ -453,7 +453,19 @@ Apenas el cliente mencione su necesidad, usa search_product con el nombre del pr
 - Facturacion digital -> search_product("Factura Electronica")
 - Sellado botellas/frascos -> search_product("Precinto Termocontraible")
 
-REGLA: maximo 1 pregunta antes de buscar. Si ya sabes que necesita, busca SIN preguntar mas.`,
+REGLA: maximo 1 pregunta antes de buscar. Si ya sabes que necesita, busca SIN preguntar mas.
+
+REGLA DE NO REPETIR FOTOS:
+- Si ya mostraste un producto en esta conversacion, no vuelvas a buscarlo. El cliente ya lo vio.
+- Solo usa search_product para un producto NUEVO que no hayas mostrado antes.
+- Si el cliente pregunta mas sobre un producto que ya vio, responde con texto — no busques de nuevo.
+
+FLUJO DE VENTA COMPLETO:
+1. Identificar necesidad -> buscar y mostrar producto (1 vez)
+2. Explicar brevemente por que le sirve
+3. Recolectar: cantidad, material, tamano, tipo de envase, si tiene diseno
+4. Recolectar: nombre, empresa, telefono
+5. Armar resumen -> derivar a vendedor del area con refer_to_salesperson`,
     }),
     products: [
       { name: 'Etiquetas Adhesivas', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas autoadhesivas de alta calidad para todo tipo de envases. Alta adherencia, resistentes a frio, calor y fricciones.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/626954867d9517edd360ca27_Portada%20de%20ETIQUETAS.jpg' },
