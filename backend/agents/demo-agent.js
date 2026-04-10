@@ -215,7 +215,7 @@ async function buildSystemPrompt(clientId) {
   prompt += `\n\n## Fecha y hora actual\n${now} (Asunción, Paraguay)`;
 
   // 8. Photo rule — always search before mentioning a product
-  prompt += `\n\n# REGLA DE FOTOS — MAXIMA PRIORIDAD\nSiempre que menciones un producto o solucion, PRIMERO usa la herramienta search_product para buscarlo. NUNCA hables de un producto sin buscarlo primero. El cliente DEBE ver la foto del producto. Si el cliente pregunta por etiquetas, busca "etiquetas". Si pregunta por packaging, busca "packaging". SIEMPRE busca primero, habla despues.`;
+  prompt += `\n\n# REGLA DE PRODUCTOS — MAXIMA PRIORIDAD\nCuando el cliente te cuente que necesita, identifica cual de los productos del catalogo es el MAS relevante para su caso y buscalo con search_product usando su nombre exacto. Mostra UN SOLO producto por mensaje — el que mejor se adapte a su necesidad. NUNCA muestres varios productos de una. Si el cliente quiere ver mas opciones, ahi le mostras otro.\n\nNUNCA escribas URLs ni links de imagenes en tu texto. La interfaz muestra la foto automaticamente. Vos solo habla del producto por nombre y explica por que le sirve.`;
 
   return prompt;
 }
@@ -236,7 +236,7 @@ async function executeTool(toolName, args, clientId) {
         .eq('client_id', clientId)
         .eq('is_active', true)
         .or(`name.ilike.${like},description.ilike.${like}`)
-        .limit(5);
+        .limit(1);
 
       if (error) return { found: false, error: error.message };
       if (!data || data.length === 0) {
@@ -276,11 +276,11 @@ async function executeTool(toolName, args, clientId) {
           .select('name, price, currency, stock_quantity, image_urls, description')
           .eq('client_id', clientId)
           .eq('is_active', true)
-          .limit(20);
+          .limit(1);
 
         return {
           category: null,
-          message: 'No encontré esa categoría exacta. Acá tenés el catálogo completo:',
+          message: 'No encontré esa categoría exacta. Te muestro lo más relevante:',
           products: (allProducts || []).map(p => ({
             name: p.name,
             price: p.price,
@@ -299,7 +299,7 @@ async function executeTool(toolName, args, clientId) {
         .eq('client_id', clientId)
         .eq('category_id', categories[0].id)
         .eq('is_active', true)
-        .limit(10);
+        .limit(1);
 
       return {
         category: categories[0].name,

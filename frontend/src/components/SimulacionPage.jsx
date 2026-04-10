@@ -424,32 +424,37 @@ function SimulacionPage({ config }) {
                     </div>
                   )}
 
-                  {/* ── Product photo bubbles (stacked vertically) ── */}
-                  {msg.type === 'products' && msg.products?.length > 0 && msg.products.slice(0, 3).map((p, pIdx) => {
+                  {/* ── Product as WhatsApp photo with caption ── */}
+                  {msg.type === 'products' && msg.products?.length > 0 && (() => {
+                    const p = msg.products[0];
                     const imgSrc = p.image_url || p.image_urls?.[0];
+                    if (!imgSrc) return null;
                     const hasPrice = p.price && Number(p.price) > 0;
+                    const desc = p.description ? (p.description.length > 80 ? p.description.substring(0, 80) + '...' : p.description) : '';
                     return (
-                      <div key={`prod-${pIdx}`} style={{ display: 'block', marginBottom: '4px' }}>
-                        <div className="bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ display: 'block', width: '220px' }}>
-                          {imgSrc && (
-                            <img src={imgSrc} alt={p.name} loading="lazy"
-                              onClick={() => setLightboxImage(imgSrc)}
-                              style={{ display: 'block', width: '220px', height: '150px', objectFit: 'cover', cursor: 'pointer' }} />
-                          )}
-                          <div style={{ padding: '8px 12px' }}>
-                            <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
-                            {p.description && (
-                              <p className="text-xs text-gray-500 line-clamp-2" style={{ marginTop: '2px' }}>{p.description}</p>
-                            )}
-                            <p className="text-xs" style={{ marginTop: '4px', color: hasPrice ? '#25D366' : '#8696a0' }}>
+                      <div style={{ display: 'block', marginBottom: '4px', marginTop: '2px' }}>
+                        <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', width: '240px', padding: '3px' }}>
+                          <img
+                            src={imgSrc}
+                            alt={p.name}
+                            loading="lazy"
+                            onClick={() => setLightboxImage(imgSrc)}
+                            style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', borderRadius: '6px', cursor: 'pointer' }}
+                          />
+                          <div style={{ padding: '6px 4px 4px 4px', fontSize: '13px', color: '#111' }}>
+                            <span style={{ fontWeight: 600 }}>{p.name}</span>
+                            {desc && <span style={{ color: '#555' }}> — {desc}</span>}
+                            <div style={{ fontSize: '11px', color: hasPrice ? '#25D366' : '#8696a0', marginTop: '3px' }}>
                               {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar cotizacion'}
-                            </p>
-                            <p style={{ textAlign: 'right', fontSize: '11px', color: '#8696a0', marginTop: '4px' }}>{fmtTime(msg.timestamp)}</p>
+                            </div>
+                            <div style={{ textAlign: 'right', fontSize: '10px', color: '#999', marginTop: '2px' }}>
+                              {fmtTime(msg.timestamp)}
+                            </div>
                           </div>
                         </div>
                       </div>
                     );
-                  })}
+                  })()}
 
                   {/* ── Appointment card ── */}
                   {msg.type === 'appointment' && msg.appointment && (
