@@ -214,8 +214,8 @@ async function buildSystemPrompt(clientId) {
   const now = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion' });
   prompt += `\n\n## Fecha y hora actual\n${now} (Asunción, Paraguay)`;
 
-  // 8. Photo rule — always search before mentioning a product
-  prompt += `\n\n# REGLA DE PRODUCTOS — MAXIMA PRIORIDAD\nCuando el cliente te cuente que necesita, identifica cual de los productos del catalogo es el MAS relevante para su caso y buscalo con search_product usando su nombre exacto. Mostra UN SOLO producto por mensaje — el que mejor se adapte a su necesidad. NUNCA muestres varios productos de una. Si el cliente quiere ver mas opciones, ahi le mostras otro.\n\nNUNCA escribas URLs ni links de imagenes en tu texto. La interfaz muestra la foto automaticamente. Vos solo habla del producto por nombre y explica por que le sirve.`;
+  // 8. Product rule — search immediately, don't loop asking questions
+  prompt += `\n\n# REGLA DE PRODUCTOS — MAXIMA PRIORIDAD\nSOS UNA VENDEDORA. Cuando el cliente te diga que necesita, VOS ya sabes que producto ofrecerle. NO le hagas mas de 1 pregunta antes de buscar un producto. En cuanto tengas una idea de lo que necesita, usa search_product INMEDIATAMENTE y mostra el producto.\n\nEjemplos:\n- Cliente dice "necesito etiquetas para lacteos" -> busca "Etiquetas para Refrigerados" YA\n- Cliente dice "tengo botellas" -> busca "Wrap Around" o "Etiquetas Adhesivas" YA\n- Cliente dice "necesito proteger mi marca" -> busca "Hologramas" YA\n- Cliente dice "packaging" -> busca "Packaging" YA\n\nNO hagas preguntas innecesarias. NO digas "no tengo foto". SIEMPRE tenes productos — BUSCALOS con la herramienta.\n\nNUNCA escribas URLs en tu texto. La interfaz muestra la foto automaticamente.`;
 
   return prompt;
 }
@@ -229,13 +229,18 @@ async function executeTool(toolName, args, clientId) {
       const query = String(args.query || '').trim();
       if (!query) return { found: false, message: 'No recibí un término de búsqueda.' };
 
-      const like = `%${query}%`;
+      // Split query into words (>2 chars) and search each in name/description
+      const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const conditions = words.length > 0
+        ? words.map(w => `name.ilike.%${w}%,description.ilike.%${w}%`).join(',')
+        : `name.ilike.%${query}%,description.ilike.%${query}%`;
+
       const { data, error } = await supabase
         .from('products')
         .select('id, name, description, price, currency, stock_quantity, image_urls, seller_pitch')
         .eq('client_id', clientId)
         .eq('is_active', true)
-        .or(`name.ilike.${like},description.ilike.${like}`)
+        .or(conditions)
         .limit(1);
 
       if (error) return { found: false, error: error.message };

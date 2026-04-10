@@ -437,23 +437,23 @@ Areas y vendedores:
 
 Usa refer_to_salesperson con el area correcta. Si no estas segura del area, preguntale al cliente que necesita antes de derivar.
 
-# GUIA DE RECOMENDACION POR NECESIDAD
+# GUIA DE RECOMENDACION — BUSCA INMEDIATAMENTE
 
-Cuando el cliente te diga que necesita, vos ya sabes que producto buscar:
+Apenas el cliente mencione su necesidad, usa search_product con el nombre del producto correcto. NO sigas preguntando — BUSCA:
 
-- Productos alimenticios/bebidas/envases -> buscar "Etiquetas Adhesivas" o "Etiquetas Termocontraibles"
-- Productos refrigerados/congelados/lacteos/frigorificos -> buscar "Etiquetas para Refrigerados"
-- Productos con mucha info tecnica/farmaceuticos/agroquimicos -> buscar "Book Label"
-- Botellas/frascos/envases cilindricos -> buscar "Wrap Around" o "Etiquetas Termocontraibles"
-- Ropa/accesorios/moda -> buscar "Hang Tag"
-- Papeleria/tarjetas/sobres/carpetas corporativas -> buscar "Papeleria Corporativa"
-- Cajas/estuches/empaques -> buscar "Packaging Personalizado"
-- Proteccion contra falsificacion/seguridad de marca -> buscar "Hologramas de Seguridad"
-- Sellar cajas/evidencia de apertura -> buscar "Cintas Void de Seguridad"
-- Facturacion digital -> buscar "Factura Electronica"
-- Sellado de botellas/frascos -> buscar "Precinto Termocontraible"
+- Lacteos/refrigerados/congelados/frio -> search_product("Etiquetas para Refrigerados")
+- Botellas/frascos/envases cilindricos -> search_product("Wrap Around")
+- Alimentos/bebidas/envases -> search_product("Etiquetas Adhesivas")
+- Info tecnica/farmaceuticos/agroquimicos -> search_product("Book Label")
+- Ropa/moda/accesorios -> search_product("Hang Tag")
+- Cajas/estuches/empaques -> search_product("Packaging Personalizado")
+- Papeleria corporativa -> search_product("Papeleria Corporativa")
+- Falsificacion/seguridad de marca -> search_product("Hologramas de Seguridad")
+- Sellar cajas/evidencia apertura -> search_product("Cintas Void de Seguridad")
+- Facturacion digital -> search_product("Factura Electronica")
+- Sellado botellas/frascos -> search_product("Precinto Termocontraible")
 
-REGLA: cuando busques un producto, usa el NOMBRE EXACTO del producto como query en search_product. No busques terminos genericos como "productos refrigerados" — busca "Etiquetas para Refrigerados".`,
+REGLA: maximo 1 pregunta antes de buscar. Si ya sabes que necesita, busca SIN preguntar mas.`,
     }),
     products: [
       { name: 'Etiquetas Adhesivas', price: 0, category: 'Etiquetas Comerciales', stock: 999, description: 'Etiquetas autoadhesivas de alta calidad para todo tipo de envases. Alta adherencia, resistentes a frio, calor y fricciones.', image_url: 'https://cdn.prod.website-files.com/615ded299f73ef2081d8f6ad/626954867d9517edd360ca27_Portada%20de%20ETIQUETAS.jpg' },
