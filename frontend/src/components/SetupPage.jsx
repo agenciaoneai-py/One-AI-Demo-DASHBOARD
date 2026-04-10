@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { API_URL, useAppContext } from '../App';
 
 // ─── Shared building blocks ─────────────────────────────────
@@ -553,6 +553,8 @@ export default function SetupPage() {
 
   // UI state
   const [loading, setLoading] = useState(false);
+  const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
+  const templateDropdownRef = useRef(null);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
   const [status, setStatus] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
@@ -564,6 +566,17 @@ export default function SetupPage() {
       .then(data => { if (data.success) setStatus(data.data); })
       .catch(() => {})
       .finally(() => setStatusLoading(false));
+  }, []);
+
+  // Close template dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (templateDropdownRef.current && !templateDropdownRef.current.contains(e.target)) {
+        setTemplateDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   // Auto-dismiss toast
@@ -695,30 +708,33 @@ export default function SetupPage() {
         </div>
 
         {/* Template selector */}
-        <div className="relative group">
-          <button type="button" className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2 shadow-sm">
+        <div className="relative" ref={templateDropdownRef}>
+          <button type="button" onClick={() => setTemplateDropdownOpen(o => !o)}
+            className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2 shadow-sm">
             <i className="fas fa-magic text-indigo-500"></i>
             Templates rápidos
-            <i className="fas fa-chevron-down text-gray-400 text-xs ml-1"></i>
+            <i className={`fas fa-chevron-${templateDropdownOpen ? 'up' : 'down'} text-gray-400 text-xs ml-1`}></i>
           </button>
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 hidden group-hover:block z-40">
-            {Object.entries(TEMPLATES).map(([key, t]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => applyTemplate(key)}
-                className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center gap-3"
-              >
-                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
-                  <i className={`${t.icon} text-indigo-500 text-sm`}></i>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{t.label}</p>
-                  <p className="text-xs text-gray-400">{t.businessName}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+          {templateDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-40">
+              {Object.entries(TEMPLATES).map(([key, t]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { applyTemplate(key); setTemplateDropdownOpen(false); }}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center gap-3"
+                >
+                  <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                    <i className={`${t.icon} text-indigo-500 text-sm`}></i>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{t.label}</p>
+                    <p className="text-xs text-gray-400">{t.businessName}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
