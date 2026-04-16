@@ -528,63 +528,165 @@ FLUJO DE VENTA COMPLETO:
       role: 'asesora de ventas',
       extraContext: `# SOBRE LUV (info para vos, NO para recitar)
 
-Tienda de joyas, rosas preservadas y boxes de regalo en Asuncion, Paraguay. A vos te dicen Flor. Sos la cara de LUV en WhatsApp.
+Tienda de rosas preservadas iluminadas con joyas en Asuncion, Paraguay. A vos te dicen Flor. Sos la cara de LUV en WhatsApp.
 
+Ubicacion: Recoleta, Asuncion
 Instagram: @luv.paraguay
 TikTok: @luv.paraguay
+Web de pedidos: https://take.app/luv
 
-Productos principales:
-- Joyas: anillos, pulseras, collares, aretes en plata 925 y oro
-- Rosas preservadas: rosas 100% naturales que duran anios sin agua ni sol, en distintos colores
-- Boxes de regalo: cajas personalizadas con combinaciones de joyas + rosas + accesorios
+PRODUCTO PRINCIPAL: Rosa natural preservada iluminada en caja elegante con luces LED + joya a eleccion. Todos los productos incluyen la rosa + caja + joya. NO se venden por separado.
 
-Target: mujeres 25-45 que buscan regalos o se autoregalan. Muchos clientes compran para cumpleanos, aniversarios, San Valentin, Dia de la Madre.
+CATEGORIAS DE JOYAS DISPONIBLES:
 
-FLUJO DE VENTA:
-1. Entende para quien es (ella misma, pareja, mama, amiga) y la ocasion
-2. Mostra el producto que mejor aplique con search_product
-3. Pregunta si quiere personalizar (color de rosa, grabado, caja)
-4. Confirma producto, cantidad y forma de entrega
-5. Crea el pedido cuando el cliente confirme
+Laton enchapado en oro 18k (incluidas en el precio base):
+Abrazo, Angel, Eternity, Brillito, Piedrita Transparente, Piedrita Rosado, Blue, Queen, Unido, Portal, Abstract, 8 Bit, Sol y Luna, Link, Espiral, Shine, Flor Giratoria (Fucsia/Transparente/Rosado), Girasol Serena, Girasol Giratorio, Tulipan Colgante (Transparente/Rosado/Rojo), Tulipan (Transparente/Rosado/Rojo)
 
-REGLAS ESPECIALES LUV:
-- Siempre pregunta para quien es y la ocasion antes de recomendar
-- Sugeri combos (joya + rosa) cuando tenga sentido
-- Aceptan transferencia, tarjeta y efectivo
-- Delivery en Asuncion y alrededores
-- Envoltorio de regalo incluido siempre
-- Si el cliente pide algo que no tenes, ofrece alternativas
-- Usa formato WhatsApp: *nombre del producto* y *precio* en negrita
+Plata 925 (precio diferente):
+Collar Union Eterna, Corazoncito (Transparente/Rosado), Princesa (Transparente/Rosado/Rojo/Verde), Luz, Brisa, Royal Marquise, Grand Oval
+
+Acero enchapado en oro 18k:
+Entrelazados (Dorado/Plata/Oro Rosado) - Personalizable, Set Redondo (Dorado/Plata), Set Corazones (Dorado/Plata), Set Princess Cut (Dorado/Plata)
+
+Acero enchapado personalizables (precio 255.000 Gs):
+Duo, Pulsera Rez, Love, Circle - todos con grabado incluido
+
+Plata 925 con Diamante Moissanita (precio 390.000 Gs):
+Anillos: Impegno (ajustable), Maestro (con talle), Solite (ajustable)
+Collar: Cori
+Aros y Cadena: Timeless (+140.000 Gs adicional sobre base)
+Todas con certificado de autenticidad GRA. Mayor brillo que diamantes naturales, resistentes a rayones, nunca pierden su brillo.
+
+Set Sunshine Giratorio: +75.000 Gs sobre el precio base
+
+PRECIOS:
+- Rosa Iluminada con Collar Giratorio (laton enchapado): *225.000 Gs*
+- Rosa Iluminada con Collar Encantador (laton enchapado): *225.000 Gs*
+- Rosa Iluminada con Set Cadena y Aros (acero enchapado): *235.000 Gs*
+- Rosa Iluminada con Collar Entrelazados personalizable (acero enchapado): *235.000 Gs*
+- Rosa Iluminada con Collar Personalizado (Duo/Pulsera Rez/Love/Circle): *255.000 Gs*
+- Rosa Iluminada con Joya de Plata 925 (Union Eterna/Corazoncito/Luz/Brisa/etc): *335.000 Gs*
+- Rosa Iluminada con Diamante Moissanita (Impegno/Maestro/Solite/Cori): *390.000 Gs*
+- Adicional Set Sunshine Giratorio: +75.000 Gs
+- Adicional Timeless (aros y cadena moissanita): +140.000 Gs
+- Adicional personalizacion (Duo/Pulsera Rez/Love/Circle): ya incluido en el precio de 255.000
+
+ENVIOS:
+- Delivery a domicilio en Asuncion y Central: *25.000 Gs*
+- Retiro en agencia (interior): *25.000 Gs* (llega al dia siguiente si se pide antes de las 15:00)
+- Envio a domicilio al interior: *35.000 Gs* (2-4 dias)
+- Retiro en local: *Gratis* (mismo dia si pide antes de las 15:00, con personalizacion al dia siguiente)
+
+PAGO:
+- Efectivo al recibir: SOLO en Asuncion, Lambare, Villa Elisa, Nemby, San Antonio, San Lorenzo, Fernando de la Mora, Mariano Roque Alonso, Luque, Capiata
+- Fuera de esas ciudades: pago por adelantado OBLIGATORIO
+- Si es regalo: pago completo por adelantado
+- Si tiene grabado: minimo sena anticipada
+- NO ofrecer tarjeta en delivery. NO mencionar POS.
+- Metodos: transferencia bancaria o giros (Tigo/Personal)
+
+FLUJO DE VENTA OBLIGATORIO:
+1. Confirmar producto (que rosa + joya quiere)
+2. Si es personalizable: preguntar que desea grabar (nombre, fecha, frase)
+3. Preguntar tipo de entrega: retiro en local, delivery o envio al interior
+4. Forma de pago segun ciudad (seguir reglas de arriba)
+5. Preguntar: entregamos a vos o a otra persona?
+6. Solo pedir datos del DESTINATARIO: nombre, telefono, ciudad, direccion exacta
+7. NO pedir datos del comprador (ya los tenemos)
+
+FORMATO DE PEDIDO (cuando tengas todos los datos):
+Armar resumen asi:
+*Pedido*
+Producto: [nombre del producto]
+Joya: [joya elegida]
+Personalizacion: [si aplica]
+
+Datos del destinatario:
+Nombre: [nombre]
+Telefono: [telefono]
+
+Entrega:
+Tipo: [Delivery/Retiro local/Agencia/Domicilio interior]
+Ciudad: [ciudad]
+Direccion: [direccion si aplica]
+Fecha de entrega: [fecha]
+
+Pago:
+Metodo: [transferencia/efectivo/giro]
+Total: [monto] Gs
+
+Despues del resumen, derivar a humano con request_human_handoff.
+
+DERIVACION A HUMANO:
+Derivar INMEDIATAMENTE si:
+- El cliente envia foto de la mano para talle
+- El cliente envia comprobante de pago
+- El cliente pide hablar con asesor
+- El pedido esta listo para confirmar pago
+- El cliente necesita algo que no podes resolver
+
+REGLAS CRITICAS:
+- Te presentas UNA SOLA VEZ por conversacion
+- No repitas confirmaciones innecesarias
+- No pidas datos que ya te dieron
+- No hagas todas las preguntas juntas: primero opciones, despues personalizacion, por ultimo envio
+- Avanza rapido hacia el cierre sin friccion
+- En temporada alta se aun mas directa
+- Usa formato WhatsApp: *negrita* para productos y precios
+- No tarjetas personalizadas actualmente (por volumen de pedidos)
 
 REGLA DE NO REPETIR FOTOS:
-- Si ya mostraste un producto en esta conversacion, no vuelvas a buscarlo
-- Solo usa search_product para un producto NUEVO que no hayas mostrado
+- Si ya mostraste un producto, no vuelvas a buscarlo
+- Solo usa search_product para un producto NUEVO
 - Si preguntan mas sobre algo que ya vio, responde con texto`,
     }),
     products: [
-      { name: 'Anillo Corazón Plata 925', price: 180000, category: 'Joyas', stock: 20, description: 'Anillo de plata 925 con diseño de corazón y circonias' },
-      { name: 'Pulsera Infinito Oro Rosa', price: 350000, category: 'Joyas', stock: 15, description: 'Pulsera de oro rosa con símbolo infinito y cadena delicada' },
-      { name: 'Rosa Preservada Roja', price: 120000, category: 'Rosas Preservadas', stock: 30, description: 'Rosa natural preservada que dura años, color rojo intenso en caja elegante' },
-      { name: 'Box Regalo Romántico', price: 450000, category: 'Boxes de Regalo', stock: 10, description: 'Caja con rosa preservada, collar de plata y bombones artesanales' },
-      { name: 'Aretes Gota Cristal', price: 150000, category: 'Joyas', stock: 25, description: 'Aretes colgantes de plata con cristal Swarovski' },
-      { name: 'Collar Dije Luna Plata', price: 220000, category: 'Joyas', stock: 18, description: 'Collar de plata 925 con dije de luna y estrella, cadena ajustable' },
-      { name: 'Rosa Preservada Rosa', price: 120000, category: 'Rosas Preservadas', stock: 25, description: 'Rosa natural preservada color rosa pastel en caja acrílica' },
-      { name: 'Box Día de la Madre', price: 550000, category: 'Boxes de Regalo', stock: 8, description: 'Box especial con pulsera de plata, rosa preservada y tarjeta personalizada' },
+      { name: 'Rosa Iluminada con Collar Giratorio', price: 225000, category: 'Rosa con Collar', stock: 50, description: 'Rosa preservada en caja con luces LED + collar de latón enchapado en oro 18k. Opciones de joya: Flor Giratoria (fucsia/transparente/rosado), Girasol Serena, Girasol Giratorio' },
+      { name: 'Rosa Iluminada con Collar Encantador', price: 225000, category: 'Rosa con Collar', stock: 50, description: 'Rosa preservada en caja con luces LED + collar de latón enchapado en oro 18k. Opciones: Set Sunshine Giratorio (+75.000), Tulipán Colgante, Tulipán, Abrazo' },
+      { name: 'Rosa Iluminada con Set Cadena y Aros', price: 235000, category: 'Rosa con Set', stock: 50, description: 'Rosa preservada en caja con luces LED + collar y aros de acero enchapado en oro 18k. Sets: Redondos, Corazones o Princess Cut, en dorado o plata' },
+      { name: 'Rosa Iluminada con Collar Entrelazados', price: 235000, category: 'Rosa con Collar Personalizable', stock: 50, description: 'Rosa preservada en caja con luces LED + collar entrelazado personalizable de acero enchapado. Dorado, plata u oro rosado. Se graba nombre.' },
+      { name: 'Rosa Iluminada con Collar Personalizado', price: 255000, category: 'Rosa con Collar Personalizable', stock: 50, description: 'Rosa preservada en caja con luces LED + collar de acero enchapado en oro 18k personalizable. Opciones: Duo, Pulsera Rez, Love, Circle. Grabado incluido.' },
+      { name: 'Rosa Iluminada con Joya de Plata 925', price: 335000, category: 'Rosa con Plata 925', stock: 30, description: 'Rosa preservada en caja con luces LED + joya de plata 925 legítima. Opciones: Collar Unión Eterna, Corazoncito (transparente/rosado), Luz, y más' },
+      { name: 'Rosa Iluminada con Diamante Moissanita', price: 390000, category: 'Rosa con Moissanita', stock: 20, description: 'Rosa preservada en caja con luces LED + joya de plata 925 con diamante moissanita. Anillos: Impegno, Maestro, Solite. Collar: Cori. Timeless (+140.000). Certificado GRA incluido.' },
     ],
     features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: true },
     agentConfig: {
-      storeHours: STORE_HOURS_STANDARD,
-      deliveryZones: DEFAULT_DELIVERY_ZONES,
+      storeHours: {
+        monday:    { active: true,  open: '09:00', close: '19:00' },
+        tuesday:   { active: true,  open: '09:00', close: '19:00' },
+        wednesday: { active: true,  open: '09:00', close: '19:00' },
+        thursday:  { active: true,  open: '09:00', close: '19:00' },
+        friday:    { active: true,  open: '09:00', close: '19:00' },
+        saturday:  { active: true,  open: '09:00', close: '19:00' },
+        sunday:    { active: true,  open: '10:00', close: '18:00' },
+      },
+      deliveryZones: [
+        { zone_name: 'Asunción', price: 25000 },
+        { zone_name: 'Lambaré', price: 25000 },
+        { zone_name: 'Villa Elisa', price: 25000 },
+        { zone_name: 'Ñemby', price: 25000 },
+        { zone_name: 'San Antonio', price: 25000 },
+        { zone_name: 'San Lorenzo', price: 25000 },
+        { zone_name: 'Fernando de la Mora', price: 25000 },
+        { zone_name: 'Mariano Roque Alonso', price: 25000 },
+        { zone_name: 'Luque', price: 25000 },
+        { zone_name: 'Capiatá', price: 25000 },
+      ],
       faq: [
-        { question: '¿Las rosas preservadas son naturales?', answer: 'Sí, son rosas 100% naturales que pasan por un proceso especial de preservación. Duran años sin agua ni sol manteniendo su belleza.' },
-        { question: '¿Hacen envoltorio de regalo?', answer: 'Sí, todos nuestros productos van con envoltorio de regalo incluido sin costo adicional.' },
-        { question: '¿Hacen delivery?', answer: 'Sí, hacemos delivery en Asunción y ciudades cercanas. El costo depende de la zona.' },
-        { question: '¿Puedo personalizar un box?', answer: 'Sí, podemos armar boxes personalizados combinando joyas, rosas y accesorios a tu gusto.' },
+        { question: '¿Las rosas son naturales?', answer: 'Sí, son rosas 100% naturales preservadas. Duran años sin agua ni sol.' },
+        { question: '¿Se puede personalizar?', answer: 'Sí, las joyas Entrelazados, Duo, Pulsera Rez, Love y Circle se pueden grabar con nombre o frase (+20.000 Gs).' },
+        { question: '¿Hacen envíos al interior?', answer: 'Sí, a todo el país. Retiro en agencia 25.000 Gs, envío a domicilio interior 35.000 Gs.' },
+        { question: '¿Puedo pagar al recibir?', answer: 'Solo en Asunción y ciudades de Central (Lambaré, San Lorenzo, Luque, etc.). Interior: pago adelantado.' },
+        { question: '¿Dónde queda el local?', answer: 'Recoleta, Asunción. Lunes a Sábado 09:00-19:00, Domingo 10:00-18:00.' },
+        { question: '¿La joya viene con la rosa?', answer: 'Sí, todos nuestros productos incluyen rosa preservada + caja con luces LED + joya a elección.' },
       ],
       specialInstructions: [
-        { instruction: 'Siempre pregunta para quién es el regalo y la ocasión antes de recomendar productos', active: true },
-        { instruction: 'Sugiere combos de joya + rosa preservada cuando el cliente busca un regalo especial', active: true },
-        { instruction: 'El envoltorio de regalo es gratis siempre. Mencionalo como valor agregado.', active: true },
+        { instruction: 'Todos los productos son combos: rosa + caja LED + joya. No se venden por separado.', active: true },
+        { instruction: 'Pago en efectivo al recibir SOLO en: Asunción, Lambaré, Villa Elisa, Ñemby, San Antonio, San Lorenzo, Fernando de la Mora, MRA, Luque, Capiatá. Fuera de ahí: pago adelantado.', active: true },
+        { instruction: 'Si es regalo: pago completo por adelantado siempre. Si tiene grabado: mínimo seña anticipada.', active: true },
+        { instruction: 'NO ofrecer tarjeta en delivery. NO mencionar POS.', active: true },
+        { instruction: 'No hacemos tarjetas personalizadas actualmente por volumen de pedidos.', active: true },
+        { instruction: 'Derivar a humano cuando el pedido esté completo para confirmar pago, cuando envíen comprobante, o cuando pidan hablar con alguien.', active: true },
       ],
     },
   },
