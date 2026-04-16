@@ -218,8 +218,9 @@ function SimulacionPage({ config }) {
   const fileInputRef = useRef(null);
   const now = useNow();
 
-  const agentName = config?.ownerName || 'Agente IA';
+  const agentName = config?.agentName || config?.ownerName || 'Agente IA';
   const businessName = config?.businessName || 'Tu Negocio';
+  const waContactName = agentName !== businessName ? `${agentName} de ${businessName}` : businessName;
   const logoUrl = config?.logoUrl || null;
   const avatarInitial = (agentName || 'A').charAt(0).toUpperCase();
   const features = config?.features || {};
@@ -401,7 +402,7 @@ function SimulacionPage({ config }) {
                 }
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm truncate">{businessName}</p>
+                <p className="text-white font-semibold text-sm truncate">{waContactName}</p>
                 <p className="text-emerald-200 text-xs">en linea</p>
               </div>
               <div className="flex items-center gap-4">

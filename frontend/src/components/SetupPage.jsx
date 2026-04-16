@@ -520,7 +520,7 @@ FLUJO DE VENTA COMPLETO:
     businessName: 'LUV',
     agentName: 'Florencia',
     agentRole: 'Asesora de ventas',
-    ownerName: 'LUV Admin',
+    ownerName: 'Florencia de LUV',
     ownerEmail: 'contacto@luv.com.py',
     systemPrompt: buildPrompt({
       agentName: 'Florencia',
