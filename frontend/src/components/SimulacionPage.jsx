@@ -596,34 +596,14 @@ function SimulacionPage({ config }) {
                 </div>
               ))}
 
-              {/* Welcome message with WhatsApp reply buttons */}
-              {chipsVisible && messages.length === 0 && (
-                <div className="flex justify-start mb-1">
-                  <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ borderColor: '#e2dbd3' }}>
-                    <div className="px-3 py-2">
-                      <p className="text-sm text-gray-900" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>
-                        Hola! Soy {agentName} de {businessName}. Como te puedo ayudar?
-                      </p>
-                      <p className="text-right mt-0.5" style={{ fontSize: '11px', color: '#8696a0' }}>
-                        {fmtTime(now)}
-                      </p>
-                    </div>
-                    <div style={{ borderTop: '1px solid #e2dbd3' }}>
-                      {getSuggestionChips(businessName).slice(0, 3).map((chip, i, arr) => (
-                        <button
-                          key={i}
-                          onClick={() => sendMessage(chip)}
-                          className="wa-reply-btn w-full text-center py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                          style={{
-                            color: '#00A884',
-                            borderBottom: i < arr.length - 1 ? '1px solid #e2dbd3' : 'none',
-                            fontSize: '14px',
-                          }}
-                        >
-                          {chip}
-                        </button>
-                      ))}
-                    </div>
+              {/* Empty state — customer writes first, like real WhatsApp */}
+              {messages.length === 0 && !isTyping && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="bg-white/80 rounded-lg px-4 py-2 shadow-sm">
+                    <p className="text-xs text-center" style={{ color: '#8696a0' }}>
+                      <i className="fas fa-lock mr-1" style={{ fontSize: '9px' }} />
+                      Mensajes cifrados de extremo a extremo
+                    </p>
                   </div>
                 </div>
               )}

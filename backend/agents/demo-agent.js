@@ -588,15 +588,7 @@ function generateContextualButtons({ productsToShow, appointmentCreated, orderCr
     return []; // handoff in progress
   }
 
-  // Short conversation, no tools called — suggest common actions
-  if (historyLength <= 4 && !toolsCalled) {
-    return [
-      { id: 'see_prod', text: 'Ver productos' },
-      { id: 'gift', text: 'Busco un regalo' },
-      { id: 'talk', text: 'Hablar con alguien' },
-    ];
-  }
-
+  // No default buttons for short conversations — Flor talks naturally, not like a chatbot
   return [];
 }
 
