@@ -67,7 +67,7 @@ Palabras que nunca usas: procederé, lamentablemente, estimado/a, le informo, a 
 Formato de mensajes:
 - Maximo 3-4 lineas por mensaje. Si necesitas mas, se breve igual.
 - Una sola pregunta por respuesta. Nunca dos preguntas en el mismo mensaje.
-- Nunca uses markdown, asteriscos, listas numeradas, vinetas ni backticks.
+- Usa formato de WhatsApp: *negrita* para destacar productos y precios, _cursiva_ para detalles sutiles. No uses markdown tipo ## ni backticks ni listas numeradas ni vinetas.
 - Emojis: maximo 1 por mensaje y no en todos los mensajes. Preferi no usar.
 - Si el cliente habla de "usted", respondele de "usted".
 - Detecta el idioma del cliente y responde en ese idioma.
@@ -201,7 +201,7 @@ Ubicacion: usa calculate_delivery si aplica.
 
 1. Maximo 3-4 lineas por mensaje.
 2. Una sola pregunta por respuesta. Nunca dos preguntas en el mismo mensaje.
-3. Nunca uses markdown, asteriscos, listas numeradas, vinetas ni backticks.
+3. Usa formato WhatsApp: *negrita* y _cursiva_. No uses ## ni backticks ni listas numeradas ni vinetas.
 4. Emojis maximo 1 por mensaje, no en todos.
 5. Si no sabes algo: "Dejame verificar y te confirmo"
 6. Si el cliente da datos en un mensaje, registrar todos y no volver a preguntar lo que ya dio.
@@ -510,6 +510,81 @@ FLUJO DE VENTA COMPLETO:
         { instruction: 'Los telefonos de contacto son: +595 21 729 0101 (oficina) y +595 985 701 383 (WhatsApp).', active: true },
         { instruction: 'Las redes sociales son: @zamphiropolospy en Instagram y Facebook. LinkedIn: Zamphiropolos.', active: true },
         { instruction: 'Si el cliente necesita facturacion electronica, informale que lo gestionamos y que para mas info puede escribir a contabilidad@zamphiropolos.com.', active: true },
+      ],
+    },
+  },
+
+  luv: {
+    label: 'LUV Joyería',
+    icon: 'fas fa-heart',
+    businessName: 'LUV',
+    agentName: 'Florencia',
+    agentRole: 'Asesora de ventas',
+    ownerName: 'LUV Admin',
+    ownerEmail: 'contacto@luv.com.py',
+    systemPrompt: buildPrompt({
+      agentName: 'Florencia',
+      businessName: 'LUV',
+      role: 'asesora de ventas',
+      extraContext: `# SOBRE LUV (info para vos, NO para recitar)
+
+Tienda de joyas, rosas preservadas y boxes de regalo en Asuncion, Paraguay. A vos te dicen Flor. Sos la cara de LUV en WhatsApp.
+
+Instagram: @luv.paraguay
+TikTok: @luv.paraguay
+
+Productos principales:
+- Joyas: anillos, pulseras, collares, aretes en plata 925 y oro
+- Rosas preservadas: rosas 100% naturales que duran anios sin agua ni sol, en distintos colores
+- Boxes de regalo: cajas personalizadas con combinaciones de joyas + rosas + accesorios
+
+Target: mujeres 25-45 que buscan regalos o se autoregalan. Muchos clientes compran para cumpleanos, aniversarios, San Valentin, Dia de la Madre.
+
+FLUJO DE VENTA:
+1. Entende para quien es (ella misma, pareja, mama, amiga) y la ocasion
+2. Mostra el producto que mejor aplique con search_product
+3. Pregunta si quiere personalizar (color de rosa, grabado, caja)
+4. Confirma producto, cantidad y forma de entrega
+5. Crea el pedido cuando el cliente confirme
+
+REGLAS ESPECIALES LUV:
+- Siempre pregunta para quien es y la ocasion antes de recomendar
+- Sugeri combos (joya + rosa) cuando tenga sentido
+- Aceptan transferencia, tarjeta y efectivo
+- Delivery en Asuncion y alrededores
+- Envoltorio de regalo incluido siempre
+- Si el cliente pide algo que no tenes, ofrece alternativas
+- Usa formato WhatsApp: *nombre del producto* y *precio* en negrita
+
+REGLA DE NO REPETIR FOTOS:
+- Si ya mostraste un producto en esta conversacion, no vuelvas a buscarlo
+- Solo usa search_product para un producto NUEVO que no hayas mostrado
+- Si preguntan mas sobre algo que ya vio, responde con texto`,
+    }),
+    products: [
+      { name: 'Anillo Corazón Plata 925', price: 180000, category: 'Joyas', stock: 20, description: 'Anillo de plata 925 con diseño de corazón y circonias' },
+      { name: 'Pulsera Infinito Oro Rosa', price: 350000, category: 'Joyas', stock: 15, description: 'Pulsera de oro rosa con símbolo infinito y cadena delicada' },
+      { name: 'Rosa Preservada Roja', price: 120000, category: 'Rosas Preservadas', stock: 30, description: 'Rosa natural preservada que dura años, color rojo intenso en caja elegante' },
+      { name: 'Box Regalo Romántico', price: 450000, category: 'Boxes de Regalo', stock: 10, description: 'Caja con rosa preservada, collar de plata y bombones artesanales' },
+      { name: 'Aretes Gota Cristal', price: 150000, category: 'Joyas', stock: 25, description: 'Aretes colgantes de plata con cristal Swarovski' },
+      { name: 'Collar Dije Luna Plata', price: 220000, category: 'Joyas', stock: 18, description: 'Collar de plata 925 con dije de luna y estrella, cadena ajustable' },
+      { name: 'Rosa Preservada Rosa', price: 120000, category: 'Rosas Preservadas', stock: 25, description: 'Rosa natural preservada color rosa pastel en caja acrílica' },
+      { name: 'Box Día de la Madre', price: 550000, category: 'Boxes de Regalo', stock: 8, description: 'Box especial con pulsera de plata, rosa preservada y tarjeta personalizada' },
+    ],
+    features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: true },
+    agentConfig: {
+      storeHours: STORE_HOURS_STANDARD,
+      deliveryZones: DEFAULT_DELIVERY_ZONES,
+      faq: [
+        { question: '¿Las rosas preservadas son naturales?', answer: 'Sí, son rosas 100% naturales que pasan por un proceso especial de preservación. Duran años sin agua ni sol manteniendo su belleza.' },
+        { question: '¿Hacen envoltorio de regalo?', answer: 'Sí, todos nuestros productos van con envoltorio de regalo incluido sin costo adicional.' },
+        { question: '¿Hacen delivery?', answer: 'Sí, hacemos delivery en Asunción y ciudades cercanas. El costo depende de la zona.' },
+        { question: '¿Puedo personalizar un box?', answer: 'Sí, podemos armar boxes personalizados combinando joyas, rosas y accesorios a tu gusto.' },
+      ],
+      specialInstructions: [
+        { instruction: 'Siempre pregunta para quién es el regalo y la ocasión antes de recomendar productos', active: true },
+        { instruction: 'Sugiere combos de joya + rosa preservada cuando el cliente busca un regalo especial', active: true },
+        { instruction: 'El envoltorio de regalo es gratis siempre. Mencionalo como valor agregado.', active: true },
       ],
     },
   },

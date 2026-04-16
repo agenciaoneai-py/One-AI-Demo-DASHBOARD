@@ -217,41 +217,18 @@ async function buildSystemPrompt(clientId) {
   // 8. Product + sales flow rule
   prompt += `\n\n# REGLA DE PRODUCTOS — MAXIMA PRIORIDAD
 
-SOS UNA VENDEDORA PROFESIONAL.
-
 MOSTRAR PRODUCTOS:
 - Cuando identifiques la necesidad del cliente, busca el producto correcto con search_product y mostralo UNA SOLA VEZ
 - Si ya buscaste y mostraste un producto en esta conversacion, NO lo vuelvas a buscar. Ya lo vio. No repitas fotos.
 - Solo busca otro producto si el cliente pide algo DIFERENTE a lo que ya le mostraste
 - NUNCA escribas URLs en tu texto. La interfaz muestra la foto automaticamente.
 
-RECOLECTAR INFO DEL PEDIDO:
-Despues de mostrar el producto, tu trabajo es recolectar toda esta info conversacionalmente (una pregunta por mensaje):
-1. Cantidad aproximada (ej: 1.000, 5.000, 10.000 unidades)
-2. Material preferido (si aplica al producto)
-3. Tamano/formato
-4. Tipo de envase o superficie donde se aplica
-5. Si ya tiene diseno o necesita que se lo hagan
-6. Nombre completo del contacto
-7. Empresa
-8. Telefono o email
-
-NO pidas todo de golpe. Pregunta de forma natural, uno o dos datos por mensaje.
-
-DERIVAR CON RESUMEN:
-Cuando tengas toda la info (o la mayoria), arma un resumen corto y deriva al vendedor del area usando refer_to_salesperson. Ejemplo:
-
-"Listo Carlos, te armo el resumen para el asesor:
-Producto: Etiquetas adhesivas para botellas de lacteos
-Cantidad: 5.000 unidades
-Material: Polipropileno resistente a frio
-Tamano: A definir con asesor
-Diseno: No tiene, necesita
-Contacto: Carlos Orue - 0985365741
-
-Te paso con Victor Barreto que es nuestro asesor de etiquetas, el te va a armar la cotizacion."
-
-REGLA CLAVE: el comercial debe recibir todo listo. Ana hace el trabajo pesado, el comercial solo cotiza y cobra.`;
+FORMATO DE MENSAJES EN WHATSAPP:
+- Usa *texto* para destacar nombres de productos y precios (se muestra en negrita)
+- Usa _texto_ para detalles sutiles o aclaraciones (se muestra en cursiva)
+- No abuses del formato — usalo solo cuando agrega valor
+- Ejemplo: El *Anillo Corazón* tiene un precio de *180.000 Gs*
+- No uses markdown tipo ## ni backticks ni listas numeradas ni viñetas`;
 
   return prompt;
 }
@@ -570,6 +547,59 @@ async function executeTool(toolName, args, clientId) {
   }
 }
 
+// ─── Contextual reply buttons (WhatsApp/ManyChat style) ─────────────────────
+
+function generateContextualButtons({ productsToShow, appointmentCreated, orderCreated, referralData, responseText, historyLength, toolsCalled }) {
+  // Max 3 buttons, max 20 chars each — mirrors real WhatsApp reply button limits
+  if (referralData) return []; // handoff — no buttons
+
+  if (orderCreated) {
+    return [
+      { id: 'order_ok', text: 'Gracias' },
+      { id: 'order_mod', text: 'Modificar pedido' },
+    ];
+  }
+
+  if (appointmentCreated) {
+    return [
+      { id: 'appt_ok', text: 'Gracias' },
+      { id: 'appt_change', text: 'Cambiar horario' },
+    ];
+  }
+
+  if (productsToShow && productsToShow.length > 0) {
+    return [
+      { id: 'prod_yes', text: 'Me interesa' },
+      { id: 'prod_other', text: 'Ver otro' },
+      { id: 'prod_ask', text: 'Consultar' },
+    ];
+  }
+
+  const resp = (responseText || '').toLowerCase();
+
+  if (resp.includes('delivery') || resp.includes('envío') || resp.includes('envio') || resp.includes('zona')) {
+    return [
+      { id: 'del_yes', text: 'Sí, delivery' },
+      { id: 'del_pickup', text: 'Retiro en local' },
+    ];
+  }
+
+  if (resp.includes('transferir') || resp.includes('agente humano') || resp.includes('te paso con')) {
+    return []; // handoff in progress
+  }
+
+  // Short conversation, no tools called — suggest common actions
+  if (historyLength <= 4 && !toolsCalled) {
+    return [
+      { id: 'see_prod', text: 'Ver productos' },
+      { id: 'gift', text: 'Busco un regalo' },
+      { id: 'talk', text: 'Hablar con alguien' },
+    ];
+  }
+
+  return [];
+}
+
 // ─── Cache management ────────────────────────────────────────────────────────
 
 export function clearConversationCache(userId) {
@@ -688,6 +718,18 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
       finalResponse = 'Disculpá, no pude procesar tu mensaje. ¿Podés repetirlo?';
     }
 
+    // 8b. Generate contextual reply buttons (WhatsApp/ManyChat style)
+    const toolsCalled = !!(firstMessage.tool_calls && firstMessage.tool_calls.length > 0);
+    const contextualButtons = generateContextualButtons({
+      productsToShow,
+      appointmentCreated,
+      orderCreated,
+      referralData,
+      responseText: finalResponse,
+      historyLength: history.length,
+      toolsCalled,
+    });
+
     // 9. Update in-memory history
     history.push({ role: 'user', content: message });
     history.push({ role: 'assistant', content: finalResponse });
@@ -714,6 +756,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
       appointment: appointmentCreated,
       order: orderCreated,
       referral: referralData,
+      buttons: contextualButtons,
     };
 
   } catch (error) {
@@ -724,6 +767,7 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
       appointment: null,
       order: null,
       referral: null,
+      buttons: [],
     };
   }
 }

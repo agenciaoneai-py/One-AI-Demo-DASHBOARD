@@ -7,6 +7,7 @@ const DEMO_USER_ID = 'demo_simulator_001';
 
 function getExampleMessage(business = '') {
   const b = business.toLowerCase();
+  if (b.includes('luv')) return 'quiero ver las joyas';
   if (b.includes('joyer') || b.includes('silver') || b.includes('perla')) return 'busco una pulsera de perla';
   if (b.includes('restaurant') || b.includes('parrilla') || b.includes('pizza') || b.includes('comida')) return 'quiero ver el menú del día';
   if (b.includes('clínic') || b.includes('clinic') || b.includes('médic') || b.includes('salud')) return 'quiero agendar una consulta';
@@ -18,17 +19,19 @@ function getExampleMessage(business = '') {
 
 function getSuggestionChips(business = '') {
   const b = business.toLowerCase();
+  if (b.includes('luv'))
+    return ['Ver productos', 'Busco un regalo', 'Hacen delivery?'];
   if (b.includes('joyer') || b.includes('silver') || b.includes('perla'))
-    return ['¿Qué joyas tienen?', 'Busco un regalo', '¿Hacen delivery?', 'Agendar visita'];
+    return ['Qué joyas tienen?', 'Busco un regalo', 'Hacen delivery?'];
   if (b.includes('restaurant') || b.includes('parrilla') || b.includes('pizza') || b.includes('comida'))
-    return ['Ver el menú', 'Quiero hacer un pedido', '¿Hacen delivery?', '¿Tienen combos?'];
+    return ['Ver el menú', 'Quiero hacer pedido', 'Hacen delivery?'];
   if (b.includes('clínic') || b.includes('clinic') || b.includes('médic') || b.includes('salud'))
-    return ['Agendar una cita', '¿Qué especialidades tienen?', 'Ver precios', '¿Aceptan obra social?'];
+    return ['Agendar una cita', 'Ver precios', 'Aceptan obra social?'];
   if (b.includes('ropa') || b.includes('urban') || b.includes('moda') || b.includes('style'))
-    return ['¿Qué ropa tienen?', 'Quiero hacer un pedido', '¿Hacen delivery?', '¿Tienen talles grandes?'];
+    return ['Qué ropa tienen?', 'Quiero hacer pedido', 'Hacen delivery?'];
   if (b.includes('inmobil') || b.includes('propiedad'))
-    return ['Busco un departamento', 'Quiero alquilar', 'Agendar una visita', '¿Qué zonas tienen?'];
-  return ['¿Qué productos tienen?', 'Quiero hacer un pedido', '¿Hacen delivery?', 'Agendar una cita'];
+    return ['Busco departamento', 'Quiero alquilar', 'Agendar una visita'];
+  return ['Ver productos', 'Quiero hacer pedido', 'Hacen delivery?'];
 }
 
 async function resizeImageToBase64(file, maxDim = 1024) {
@@ -69,6 +72,30 @@ function formatApptDate(dateStr) {
 
 function fmtTime(d) {
   return d.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function renderWhatsAppText(text) {
+  if (!text) return null;
+  // Parse WhatsApp formatting: *bold*, _italic_, ~strikethrough~
+  const parts = [];
+  // Parse formatting markers within single lines
+  const regex = /(\*([^*\n]+)\*)|(_([^_\n]+)_)|(~([^~\n]+)~)/g;
+  let lastIndex = 0;
+  let match;
+  let keyIdx = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[2]) parts.push(<strong key={keyIdx++}>{match[2]}</strong>);
+    else if (match[4]) parts.push(<em key={keyIdx++}>{match[4]}</em>);
+    else if (match[6]) parts.push(<del key={keyIdx++}>{match[6]}</del>);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+
+  return parts.length > 0 ? parts : text;
 }
 
 function useNow() {
@@ -227,7 +254,7 @@ function SimulacionPage({ config }) {
 
       if (res.ok) {
         const data = await res.json();
-        setMessages(prev => [...prev, { type: 'agent', text: data.response, timestamp: new Date() }]);
+        setMessages(prev => [...prev, { type: 'agent', text: data.response, buttons: data.buttons || [], timestamp: new Date() }]);
 
         if (data.products?.length > 0) {
           setUsedCapabilities(prev => new Set(prev).add('search'));
@@ -393,11 +420,34 @@ function SimulacionPage({ config }) {
                   {/* ── Agent bubble ── */}
                   {msg.type === 'agent' && (
                     <div className="flex justify-start mb-1">
-                      <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none px-3 py-2 shadow-sm" style={{ borderColor: '#e2dbd3' }}>
-                        <p className="text-sm text-gray-900 whitespace-pre-line" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>{msg.text}</p>
-                        <p className="text-right mt-0.5" style={{ fontSize: '11px', color: '#8696a0' }}>
-                          {fmtTime(msg.timestamp)}
-                        </p>
+                      <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ borderColor: '#e2dbd3' }}>
+                        <div className="px-3 py-2">
+                          <p className="text-sm text-gray-900 whitespace-pre-line" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>{renderWhatsAppText(msg.text)}</p>
+                          <p className="text-right mt-0.5" style={{ fontSize: '11px', color: '#8696a0' }}>
+                            {fmtTime(msg.timestamp)}
+                          </p>
+                        </div>
+                        {msg.buttons && msg.buttons.length > 0 && (
+                          <div style={{ borderTop: '1px solid #e2dbd3' }}>
+                            {msg.buttons.map((btn, bIdx) => (
+                              <button
+                                key={bIdx}
+                                onClick={() => {
+                                  setMessages(prev => prev.map((m, mIdx) => mIdx === idx ? { ...m, buttons: [] } : m));
+                                  sendMessage(btn.text);
+                                }}
+                                className="wa-reply-btn w-full text-center py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                                style={{
+                                  color: '#00A884',
+                                  borderBottom: bIdx < msg.buttons.length - 1 ? '1px solid #e2dbd3' : 'none',
+                                  fontSize: '14px',
+                                }}
+                              >
+                                {btn.text}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -546,15 +596,35 @@ function SimulacionPage({ config }) {
                 </div>
               ))}
 
-              {/* Suggestion chips */}
+              {/* Welcome message with WhatsApp reply buttons */}
               {chipsVisible && messages.length === 0 && (
-                <div className="flex flex-wrap gap-1.5 px-1 pt-1">
-                  {getSuggestionChips(businessName).map((chip, i) => (
-                    <button key={i} onClick={() => sendMessage(chip)}
-                      className="px-3 py-1.5 bg-white rounded-full text-xs font-medium text-teal-700 shadow-sm border border-teal-200 hover:bg-teal-50 transition-colors">
-                      {chip}
-                    </button>
-                  ))}
+                <div className="flex justify-start mb-1">
+                  <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ borderColor: '#e2dbd3' }}>
+                    <div className="px-3 py-2">
+                      <p className="text-sm text-gray-900" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>
+                        Hola! Soy {agentName} de {businessName}. Como te puedo ayudar?
+                      </p>
+                      <p className="text-right mt-0.5" style={{ fontSize: '11px', color: '#8696a0' }}>
+                        {fmtTime(now)}
+                      </p>
+                    </div>
+                    <div style={{ borderTop: '1px solid #e2dbd3' }}>
+                      {getSuggestionChips(businessName).slice(0, 3).map((chip, i, arr) => (
+                        <button
+                          key={i}
+                          onClick={() => sendMessage(chip)}
+                          className="wa-reply-btn w-full text-center py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                          style={{
+                            color: '#00A884',
+                            borderBottom: i < arr.length - 1 ? '1px solid #e2dbd3' : 'none',
+                            fontSize: '14px',
+                          }}
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 

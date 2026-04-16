@@ -130,5 +130,10 @@ body {
   animation: waTypingBounce 1.4s ease-in-out infinite;
 }
 
+/* WhatsApp reply button press feedback */
+.wa-reply-btn:active {
+  background-color: #f0f2f5;
+}
+
 /* Hide scrollbar for product carousel inside iPhone */
 .snap-x::-webkit-scrollbar { display: none; }
