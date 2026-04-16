@@ -636,21 +636,21 @@ export async function handleDemoChat(userId, message, platform = 'demo', imageUr
         role: 'user',
         content: [
           { type: 'text', text: message || 'Te envío esta imagen.' },
-          { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } },
+          { type: 'image_url', image_url: { url: imageUrl, detail: 'auto' } },
         ],
       });
     } else {
       messages.push({ role: 'user', content: message });
     }
 
-    // 6. First GPT call with tools (vision needs gpt-4o)
+    // 6. First GPT call with tools (vision needs gpt-4o, more tokens for image analysis)
     const firstResponse = await openai.chat.completions.create({
       model: imageUrl ? 'gpt-4o' : 'gpt-4.1',
       messages,
       tools: DEMO_TOOLS,
       tool_choice: 'auto',
       temperature: 0.85,
-      max_tokens: 250,
+      max_tokens: imageUrl ? 400 : 250,
       frequency_penalty: 0.5,
       presence_penalty: 0.3,
     });
