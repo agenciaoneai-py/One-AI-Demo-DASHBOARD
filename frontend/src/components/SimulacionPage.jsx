@@ -474,32 +474,52 @@ function SimulacionPage({ config }) {
                     </div>
                   )}
 
-                  {/* ── Product as WhatsApp photo with caption ── */}
+                  {/* ── Product as WhatsApp photo or text card ── */}
                   {msg.type === 'products' && msg.products?.length > 0 && (() => {
                     const p = msg.products[0];
                     const imgSrc = p.image_url || p.image_urls?.[0];
-                    if (!imgSrc) return null;
                     const hasPrice = p.price && Number(p.price) > 0;
-                    const desc = p.description ? (p.description.length > 80 ? p.description.substring(0, 80) + '...' : p.description) : '';
+                    const desc = p.description ? (p.description.length > 120 ? p.description.substring(0, 120) + '...' : p.description) : '';
+
+                    if (imgSrc) {
+                      return (
+                        <div style={{ display: 'block', marginBottom: '4px', marginTop: '2px' }}>
+                          <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', width: '240px', padding: '3px' }}>
+                            <img
+                              src={imgSrc}
+                              alt={p.name}
+                              loading="lazy"
+                              onClick={() => setLightboxImage(imgSrc)}
+                              style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', borderRadius: '6px', cursor: 'pointer' }}
+                            />
+                            <div style={{ padding: '6px 4px 4px 4px', fontSize: '13px', color: '#111' }}>
+                              <span style={{ fontWeight: 600 }}>{p.name}</span>
+                              {desc && <span style={{ color: '#555' }}> — {desc}</span>}
+                              <div style={{ fontSize: '11px', color: hasPrice ? '#25D366' : '#8696a0', marginTop: '3px' }}>
+                                {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar precio'}
+                              </div>
+                              <div style={{ textAlign: 'right', fontSize: '10px', color: '#999', marginTop: '2px' }}>
+                                {fmtTime(msg.timestamp)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // No image — render as text product card (WhatsApp style)
                     return (
-                      <div style={{ display: 'block', marginBottom: '4px', marginTop: '2px' }}>
-                        <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', width: '240px', padding: '3px' }}>
-                          <img
-                            src={imgSrc}
-                            alt={p.name}
-                            loading="lazy"
-                            onClick={() => setLightboxImage(imgSrc)}
-                            style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', borderRadius: '6px', cursor: 'pointer' }}
-                          />
-                          <div style={{ padding: '6px 4px 4px 4px', fontSize: '13px', color: '#111' }}>
-                            <span style={{ fontWeight: 600 }}>{p.name}</span>
-                            {desc && <span style={{ color: '#555' }}> — {desc}</span>}
-                            <div style={{ fontSize: '11px', color: hasPrice ? '#25D366' : '#8696a0', marginTop: '3px' }}>
-                              {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar cotizacion'}
-                            </div>
-                            <div style={{ textAlign: 'right', fontSize: '10px', color: '#999', marginTop: '2px' }}>
+                      <div className="flex justify-start mb-1">
+                        <div className="max-w-[85%] bg-white rounded-lg rounded-tl-none shadow-sm overflow-hidden" style={{ borderColor: '#e2dbd3' }}>
+                          <div className="px-3 py-2">
+                            <p className="text-sm font-semibold text-gray-900" style={{ fontSize: '14px' }}>{p.name}</p>
+                            {desc && <p className="text-sm text-gray-600 mt-0.5" style={{ fontSize: '13px', lineHeight: '1.3' }}>{desc}</p>}
+                            <p className="mt-1 font-semibold" style={{ fontSize: '14px', color: hasPrice ? '#25D366' : '#8696a0' }}>
+                              {hasPrice ? `${formatGs(p.price)} ${p.currency === 'USD' ? 'USD' : 'Gs'}` : 'Consultar precio'}
+                            </p>
+                            <p className="text-right mt-0.5" style={{ fontSize: '11px', color: '#8696a0' }}>
                               {fmtTime(msg.timestamp)}
-                            </div>
+                            </p>
                           </div>
                         </div>
                       </div>
