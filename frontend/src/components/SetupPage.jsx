@@ -660,9 +660,6 @@ Rosa con Collar Entrelazados personalizable: *235.000 Gs*
 Rosa con Collar Personalizado (Duo/Love/Circle): *255.000 Gs*
 Rosa con Joya de Plata 925: *335.000 Gs*
 Rosa con Diamante Moissanita: *390.000 Gs*
-LUV Box Caja Giratoria: *205.000 Gs*
-Cupido: *240.000 Gs*
-Candado Secreto Giratorio: *235.000 Gs*
 
 
 # ENVIOS
@@ -795,9 +792,6 @@ Desaparece y vuelve: "Hola! Seguimos con tu pedido?"
       { name: 'Rosa Iluminada con Collar Personalizado', price: 255000, category: 'Rosa con Collar Personalizable', stock: 50, description: 'Rosa preservada en caja con luces LED + collar de acero enchapado en oro 18k personalizable. Opciones: Duo, Pulsera Rez, Love, Circle. Grabado incluido.' },
       { name: 'Rosa Iluminada con Joya de Plata 925', price: 335000, category: 'Rosa con Plata 925', stock: 30, description: 'Rosa preservada en caja con luces LED + joya de plata 925 legítima. Opciones: Collar Unión Eterna, Corazoncito (transparente/rosado), Luz, y más' },
       { name: 'Rosa Iluminada con Diamante Moissanita', price: 390000, category: 'Rosa con Moissanita', stock: 20, description: 'Rosa preservada en caja con luces LED + joya de plata 925 con diamante moissanita. Anillos: Impegno, Maestro, Solite. Collar: Cori. Timeless (+140.000). Certificado GRA incluido.' },
-      { name: 'LUV Box Caja Giratoria', price: 205000, category: 'Rosa Preservada', stock: 40, description: 'Rosa natural preservada en caja giratoria elegante. El regalo perfecto para sorprender.' },
-      { name: 'Cupido', price: 240000, category: 'Rosa Preservada', stock: 30, description: 'Rosa natural preservada en presentación Cupido. Un detalle romántico único.' },
-      { name: 'Candado Secreto Giratorio', price: 235000, category: 'Rosa Preservada', stock: 25, description: 'Rosa natural preservada en presentación de candado giratorio. Misterioso y elegante.' },
     ],
     features: { multiChannel: true, inventory: true, crm: true, orders: true, appointments: false, delivery: true },
     agentConfig: {
