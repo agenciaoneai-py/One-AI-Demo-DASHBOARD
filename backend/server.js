@@ -241,7 +241,29 @@ app.use('/api/config', configRoutes);
 app.use('/api/demo', demoSetupRoutes);
 app.use('/api', demoPageRoutes);
 
+// ─── Ensure Supabase Storage bucket on startup ─────────────────────────────
+async function ensureStorage() {
+  try {
+    const BUCKET = 'product-images';
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.find(b => b.name === BUCKET)) {
+      const { error } = await supabase.storage.createBucket(BUCKET, {
+        public: true,
+        fileSizeLimit: 5 * 1024 * 1024,
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      });
+      if (error) console.error('⚠️ Could not create bucket:', error.message);
+      else console.log(`✅ Storage bucket "${BUCKET}" created (public, 5MB, jpg/png/webp)`);
+    } else {
+      console.log(`✅ Storage bucket "${BUCKET}" ready`);
+    }
+  } catch (e) {
+    console.error('⚠️ Storage check failed:', e.message);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Backend running on ${PORT}`);
+  await ensureStorage();
 });
