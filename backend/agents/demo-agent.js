@@ -547,48 +547,9 @@ async function executeTool(toolName, args, clientId) {
   }
 }
 
-// ─── Contextual reply buttons (WhatsApp/ManyChat style) ─────────────────────
+// ─── Contextual reply buttons (disabled — Flor is a salesperson, not a chatbot)
 
-function generateContextualButtons({ productsToShow, appointmentCreated, orderCreated, referralData, responseText, historyLength, toolsCalled }) {
-  // Max 3 buttons, max 20 chars each — mirrors real WhatsApp reply button limits
-  if (referralData) return []; // handoff — no buttons
-
-  if (orderCreated) {
-    return [
-      { id: 'order_ok', text: 'Gracias' },
-      { id: 'order_mod', text: 'Modificar pedido' },
-    ];
-  }
-
-  if (appointmentCreated) {
-    return [
-      { id: 'appt_ok', text: 'Gracias' },
-      { id: 'appt_change', text: 'Cambiar horario' },
-    ];
-  }
-
-  if (productsToShow && productsToShow.length > 0) {
-    return [
-      { id: 'prod_yes', text: 'Me interesa' },
-      { id: 'prod_other', text: 'Ver otro' },
-      { id: 'prod_ask', text: 'Consultar' },
-    ];
-  }
-
-  const resp = (responseText || '').toLowerCase();
-
-  if (resp.includes('delivery') || resp.includes('envío') || resp.includes('envio') || resp.includes('zona')) {
-    return [
-      { id: 'del_yes', text: 'Sí, delivery' },
-      { id: 'del_pickup', text: 'Retiro en local' },
-    ];
-  }
-
-  if (resp.includes('transferir') || resp.includes('agente humano') || resp.includes('te paso con')) {
-    return []; // handoff in progress
-  }
-
-  // No default buttons for short conversations — Flor talks naturally, not like a chatbot
+function generateContextualButtons() {
   return [];
 }
 
