@@ -98,6 +98,64 @@ function renderWhatsAppText(text) {
   return parts.length > 0 ? parts : text;
 }
 
+// Preset locations for Paraguay delivery zones (simulates GPS share)
+const PRESET_LOCATIONS = [
+  { name: 'Asunción Centro',        address: 'Asunción, Paraguay',            lat: -25.2822, lng: -57.6350 },
+  { name: 'Luque',                  address: 'Luque, Central',                 lat: -25.2697, lng: -57.4904 },
+  { name: 'Lambaré',                address: 'Lambaré, Central',               lat: -25.3419, lng: -57.6094 },
+  { name: 'San Lorenzo',            address: 'San Lorenzo, Central',           lat: -25.3395, lng: -57.5087 },
+  { name: 'Fernando de la Mora',    address: 'Fernando de la Mora, Central',   lat: -25.3189, lng: -57.5467 },
+  { name: 'Ñemby',                  address: 'Ñemby, Central',                 lat: -25.3947, lng: -57.5428 },
+  { name: 'Villa Elisa',            address: 'Villa Elisa, Central',           lat: -25.3781, lng: -57.5811 },
+  { name: 'Capiatá',                address: 'Capiatá, Central',               lat: -25.3564, lng: -57.4461 },
+  { name: 'Mariano Roque Alonso',   address: 'Mariano Roque Alonso, Central',  lat: -25.1978, lng: -57.5336 },
+  { name: 'San Antonio',            address: 'San Antonio, Central',           lat: -25.4014, lng: -57.6125 },
+  { name: 'Encarnación',            address: 'Encarnación, Itapúa (interior)', lat: -27.3308, lng: -55.8661 },
+  { name: 'Ciudad del Este',        address: 'Ciudad del Este, Alto Paraná (interior)', lat: -25.5161, lng: -54.6111 },
+];
+
+function staticMapUrl(lat, lng) {
+  // Use OpenStreetMap static tile service for map preview (no API key needed)
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=14&size=280x140&markers=${lat},${lng},red`;
+}
+
+function LocationModal({ onClose, onSelect }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <i className="fas fa-location-dot text-emerald-500" />
+            <h3 className="text-base font-semibold text-gray-900">Compartir ubicación</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">
+            <i className="fas fa-xmark" />
+          </button>
+        </div>
+        <p className="px-5 pt-3 text-xs text-gray-500">Elegí una zona para simular tu ubicación actual</p>
+        <div className="max-h-[50vh] overflow-y-auto p-3">
+          {PRESET_LOCATIONS.map((loc, i) => (
+            <button
+              key={i}
+              onClick={() => onSelect(loc)}
+              className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-location-dot text-emerald-600 text-sm" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{loc.name}</p>
+                <p className="text-xs text-gray-500 truncate">{loc.address}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function useNow() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -213,6 +271,8 @@ function SimulacionPage({ config }) {
   const [pendingImage, setPendingImage] = useState(null);
   const [usedCapabilities, setUsedCapabilities] = useState(new Set());
   const [chipsVisible, setChipsVisible] = useState(true);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -281,6 +341,49 @@ function SimulacionPage({ config }) {
           setUsedCapabilities(prev => new Set(prev).add('handoff'));
       } else {
         setToast({ type: 'error', message: 'Error al enviar mensaje' });
+      }
+    } catch {
+      setToast({ type: 'error', message: 'Error de conexión' });
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const sendLocation = async (loc) => {
+    setLocationModalOpen(false);
+    setAttachMenuOpen(false);
+    setChipsVisible(false);
+
+    // Add user bubble with location
+    setMessages(prev => [...prev, {
+      type: 'user',
+      locationData: loc,
+      timestamp: new Date(),
+    }]);
+    setIsTyping(true);
+
+    try {
+      const res = await fetch(`${API_URL}/webhook/demo-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: DEMO_USER_ID,
+          message: `[Ubicación compartida: ${loc.name}, ${loc.address}. Coordenadas: ${loc.lat}, ${loc.lng}]`,
+          platform: 'demo',
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(prev => [...prev, { type: 'agent', text: data.response, buttons: data.buttons || [], timestamp: new Date() }]);
+        if (data.products?.length > 0) {
+          setMessages(prev => [...prev, { type: 'products', products: data.products, timestamp: new Date() }]);
+        }
+        if (data.order) {
+          setMessages(prev => [...prev, { type: 'order', order: data.order, timestamp: new Date() }]);
+        }
+      } else {
+        setToast({ type: 'error', message: 'Error al enviar ubicación' });
       }
     } catch {
       setToast({ type: 'error', message: 'Error de conexión' });
@@ -456,21 +559,53 @@ function SimulacionPage({ config }) {
                   {/* ── User bubble ── */}
                   {msg.type === 'user' && (
                     <div className="flex justify-end mb-1">
-                      <div className="max-w-[85%] bg-[#D9FDD3] rounded-lg rounded-tr-none px-3 py-2 shadow-sm">
-                        {msg.imageUrl && (
-                          <img src={msg.imageUrl} alt="" loading="lazy"
-                            className="rounded mb-1.5 max-w-full max-h-48 object-contain cursor-pointer"
-                            onClick={() => setLightboxImage(msg.imageUrl)} />
+                      <div className="max-w-[85%] bg-[#D9FDD3] rounded-lg rounded-tr-none shadow-sm overflow-hidden">
+                        {msg.locationData ? (
+                          <a
+                            href={`https://www.google.com/maps?q=${msg.locationData.lat},${msg.locationData.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={staticMapUrl(msg.locationData.lat, msg.locationData.lng)}
+                              alt="Mapa"
+                              loading="lazy"
+                              style={{ width: '100%', maxWidth: '280px', height: '140px', objectFit: 'cover', display: 'block' }}
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                            <div className="px-3 py-2">
+                              <p className="text-sm font-semibold text-gray-900 flex items-center gap-1.5" style={{ fontSize: '14px' }}>
+                                <i className="fas fa-location-dot text-red-500" style={{ fontSize: '13px' }} />
+                                {msg.locationData.name}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-0.5">{msg.locationData.address}</p>
+                              <div className="flex items-center justify-end gap-1 mt-1">
+                                <span style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</span>
+                                <svg width="18" height="11" viewBox="0 0 18 11" fill="none" style={{ marginBottom: '-1px' }}>
+                                  <path d="M6.5 9L2 4.5l.7-.7L6.5 7.6 12.3 1.8l.7.7L6.5 9z" fill="#53bdeb"/>
+                                  <path d="M11.5 9L7 4.5l.7-.7 3.8 3.8L17.3 1.8l.7.7L11.5 9z" fill="#53bdeb"/>
+                                </svg>
+                              </div>
+                            </div>
+                          </a>
+                        ) : (
+                          <div className="px-3 py-2">
+                            {msg.imageUrl && (
+                              <img src={msg.imageUrl} alt="" loading="lazy"
+                                className="rounded mb-1.5 max-w-full max-h-48 object-contain cursor-pointer"
+                                onClick={() => setLightboxImage(msg.imageUrl)} />
+                            )}
+                            {msg.text && <p className="text-sm text-gray-900" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>{msg.text}</p>}
+                            <div className="flex items-center justify-end gap-1 mt-0.5">
+                              <span style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</span>
+                              <svg width="18" height="11" viewBox="0 0 18 11" fill="none" style={{ marginBottom: '-1px' }}>
+                                <path d="M6.5 9L2 4.5l.7-.7L6.5 7.6 12.3 1.8l.7.7L6.5 9z" fill="#53bdeb"/>
+                                <path d="M11.5 9L7 4.5l.7-.7 3.8 3.8L17.3 1.8l.7.7L11.5 9z" fill="#53bdeb"/>
+                              </svg>
+                            </div>
+                          </div>
                         )}
-                        {msg.text && <p className="text-sm text-gray-900" style={{ fontSize: '14.5px', lineHeight: '1.35' }}>{msg.text}</p>}
-                        <div className="flex items-center justify-end gap-1 mt-0.5">
-                          <span style={{ fontSize: '11px', color: '#8696a0' }}>{fmtTime(msg.timestamp)}</span>
-                          {/* Double check */}
-                          <svg width="18" height="11" viewBox="0 0 18 11" fill="none" style={{ marginBottom: '-1px' }}>
-                            <path d="M6.5 9L2 4.5l.7-.7L6.5 7.6 12.3 1.8l.7.7L6.5 9z" fill="#53bdeb"/>
-                            <path d="M11.5 9L7 4.5l.7-.7 3.8 3.8L17.3 1.8l.7.7L11.5 9z" fill="#53bdeb"/>
-                          </svg>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -657,9 +792,37 @@ function SimulacionPage({ config }) {
             )}
 
             {/* Input area */}
-            <div className="flex items-center gap-2 px-2 py-2" style={{ backgroundColor: '#F0F2F5' }}>
+            <div className="flex items-center gap-2 px-2 py-2 relative" style={{ backgroundColor: '#F0F2F5' }}>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} disabled={isTyping}
+
+              {/* Attachment menu popup */}
+              {attachMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setAttachMenuOpen(false)} />
+                  <div className="absolute bottom-14 left-2 z-50 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden w-44">
+                    <button
+                      onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click(); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                        <i className="fas fa-image text-white text-sm" />
+                      </div>
+                      <span className="text-sm text-gray-700 font-medium">Foto</span>
+                    </button>
+                    <button
+                      onClick={() => { setAttachMenuOpen(false); setLocationModalOpen(true); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left border-t border-gray-100"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <i className="fas fa-location-dot text-white text-sm" />
+                      </div>
+                      <span className="text-sm text-gray-700 font-medium">Ubicación</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <button onClick={() => setAttachMenuOpen(o => !o)} disabled={isTyping}
                 className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-40">
                 <i className="fas fa-paperclip" style={{ fontSize: '18px' }} />
               </button>
@@ -692,6 +855,10 @@ function SimulacionPage({ config }) {
 
       {promptEditorOpen && (
         <PromptEditorModal onClose={() => setPromptEditorOpen(false)} onSaved={handlePromptSaved} />
+      )}
+
+      {locationModalOpen && (
+        <LocationModal onClose={() => setLocationModalOpen(false)} onSelect={sendLocation} />
       )}
 
       {lightboxImage && (
