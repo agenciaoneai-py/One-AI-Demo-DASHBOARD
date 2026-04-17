@@ -37,7 +37,7 @@ app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use('/api/products', productsRoutes);
 app.use('/api/contacts', contactsRoutes);
 
